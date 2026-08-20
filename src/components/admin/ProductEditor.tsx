@@ -1,6 +1,6 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
+import { uploadPresigned } from "@vercel/blob/client";
 import { useRef, useState } from "react";
 import type { Category } from "@/lib/category";
 import {
@@ -142,7 +142,7 @@ export function ProductEditor({
     setUploadProgress(0);
     try {
       for (const [index, file] of files.entries()) {
-        const blob = await upload(`products/${safeFilename(file.name)}`, file, {
+        const blob = await uploadPresigned(`products/${safeFilename(file.name)}`, file, {
           access: "public",
           handleUploadUrl: "/api/admin/uploads",
           multipart: file.size > 4 * 1024 * 1024,

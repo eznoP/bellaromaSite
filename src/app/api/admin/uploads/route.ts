@@ -1,5 +1,5 @@
-import { del } from "@vercel/blob";
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { del, issueSignedToken } from "@vercel/blob";
+import { handleUploadPresigned, type HandleUploadPresignedBody } from "@vercel/blob/client";
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminConfigured, isAdminRequestAuthenticated, isSameOrigin } from "@/lib/admin-auth";
 import { isBlobConfigured } from "@/lib/blob-store";
@@ -21,21 +21,30 @@ function authorize(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as HandleUploadBody;
-    if (body.type === "blob.generate-client-token") {
+    const body = await request.json() as HandleUploadPresignedBody;
+    if (body.type === "blob.generate-presigned-url") {
       const authorizationError = authorize(request);
       if (authorizationError) return authorizationError;
     } else if (!isBlobConfigured()) {
       return NextResponse.json({ error: "O upload de imagens não está configurado." }, { status: 503 });
     }
-    const response = await handleUpload({
+    const response = await handleUploadPresigned({
       body,
       request,
-      onBeforeGenerateToken: async (pathname) => ({
-        allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],
-        maximumSizeInBytes: 8 * 1024 * 1024,
-        addRandomSuffix: true,
-        tokenPayload: JSON.stringify({ pathname }),
+      getSignedToken: async (pathname) => ({
+        token: await issueSignedToken({
+          pathname,
+          operations: ["put"],
+          allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],
+          maximumSizeInBytes: 8 * 1024 * 1024,
+          validUntil: Date.now() + 10 * 60 * 1000,
+        }),
+        urlOptions: {
+          allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],
+          maximumSizeInBytes: 8 * 1024 * 1024,
+          addRandomSuffix: true,
+          tokenPayload: JSON.stringify({ pathname }),
+        },
       }),
       onUploadCompleted: async () => undefined,
     });
