@@ -1,0 +1,416 @@
+.experience {
+  --scene-progress: 0;
+  position: relative;
+  height: 260svh;
+  color: var(--olive-dark);
+  background: var(--ivory);
+}
+
+.stickyScene {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 38rem;
+  overflow: hidden;
+  background: var(--ivory);
+}
+
+.stickyScene::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(52, 66, 56, 0.018) 0,
+      rgba(52, 66, 56, 0.018) 1px,
+      transparent 1px,
+      transparent 7px
+    ),
+    linear-gradient(90deg, rgba(253, 246, 237, 0.2), transparent 45%);
+  content: "";
+  pointer-events: none;
+}
+
+.canvasShell,
+.portal {
+  position: absolute;
+  inset: 0;
+}
+
+.canvasShell {
+  z-index: 1;
+}
+
+.canvasShell canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.portal {
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  color: var(--olive-dark);
+  background:
+    linear-gradient(rgba(52, 66, 56, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 66, 56, 0.055) 1px, transparent 1px),
+    var(--sage);
+  background-size: 4rem 4rem;
+  opacity: 0;
+}
+
+.portalCopy {
+  display: grid;
+  max-width: 52rem;
+  justify-items: center;
+  padding: 2rem;
+  opacity: 0;
+  text-align: center;
+  transform: translateY(24px);
+}
+
+.portalCopy p {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.portalCopy strong {
+  margin-top: 0.8rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(4.2rem, 9vw, 9rem);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.07em;
+  line-height: 0.8;
+}
+
+.portalCopy span {
+  margin-top: 1.8rem;
+  color: rgba(36, 48, 40, 0.7);
+  font-size: 0.75rem;
+}
+
+.heroCopy {
+  position: absolute;
+  top: clamp(8rem, 16vh, 11rem);
+  left: var(--page-gutter);
+  z-index: 5;
+  width: min(42rem, 48vw);
+}
+
+.eyebrow {
+  max-width: 18rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.heroCopy h1 {
+  margin-top: 1rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(4.8rem, 8.2vw, 9rem);
+  font-weight: 400;
+  letter-spacing: -0.075em;
+  line-height: 0.75;
+}
+
+.heroCopy h1 > span:first-child {
+  display: block;
+  color: var(--olive-deep);
+}
+
+.kineticTitle {
+  margin-top: 0.13em;
+  color: var(--ink-soft);
+  font-size: 0.73em;
+  font-style: italic;
+  line-height: 0.9;
+  white-space: nowrap;
+}
+
+.heroText {
+  max-width: 27rem;
+  margin-top: 2rem;
+  color: var(--ink-soft);
+  font-size: clamp(0.85rem, 1.15vw, 1rem);
+  line-height: 1.75;
+}
+
+.heroLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid currentColor;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: gap var(--duration-fast) ease;
+}
+
+.heroLink:hover {
+  gap: 1.35rem;
+}
+
+.sceneMeta {
+  position: absolute;
+  top: 7.25rem;
+  right: var(--page-gutter);
+  z-index: 5;
+  display: grid;
+  justify-items: end;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sceneMeta strong {
+  margin-top: 0.3rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.progressRail {
+  position: absolute;
+  right: var(--page-gutter);
+  bottom: 2.4rem;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: auto 4.5rem auto;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
+.progressRail i {
+  position: relative;
+  display: block;
+  width: 4.5rem;
+  height: 1px;
+  overflow: hidden;
+  background: rgba(36, 48, 40, 0.25);
+}
+
+.progressRail b {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: var(--olive-dark);
+  transform: scaleX(var(--scene-progress));
+  transform-origin: left;
+}
+
+.scrollCue {
+  position: absolute;
+  bottom: 2.2rem;
+  left: var(--page-gutter);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.scrollCue i {
+  position: relative;
+  display: block;
+  width: 1.7rem;
+  height: 2.8rem;
+  border: 1px solid rgba(36, 48, 40, 0.45);
+  border-radius: 999px;
+}
+
+.scrollCue i::after {
+  position: absolute;
+  top: 0.55rem;
+  left: 50%;
+  width: 3px;
+  height: 0.55rem;
+  background: var(--olive-dark);
+  border-radius: 999px;
+  content: "";
+  transform: translateX(-50%);
+  animation: scrollPulse 1.6s ease-in-out infinite;
+}
+
+.webglFallback {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  background: var(--ivory);
+}
+
+.webglFallback span {
+  position: relative;
+  width: min(48vw, 24rem);
+  aspect-ratio: 1.25;
+  background: var(--linen);
+  clip-path: polygon(0 32%, 50% 0, 100% 32%, 100% 100%, 0 100%);
+}
+
+.webglFallback span::after {
+  position: absolute;
+  bottom: 0;
+  left: 38%;
+  width: 24%;
+  height: 48%;
+  background: var(--olive);
+  content: "";
+}
+
+@keyframes scrollPulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: translate(-50%, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, 0.75rem);
+  }
+}
+
+@media (max-width: 900px) {
+  .experience {
+    height: 220svh;
+  }
+
+  .heroCopy {
+    width: min(38rem, 66vw);
+  }
+
+  .sceneMeta {
+    display: none;
+  }
+}
+
+@media (max-width: 719px) {
+  .experience {
+    height: 180svh;
+  }
+
+  .stickyScene {
+    min-height: 36rem;
+  }
+
+  .heroCopy {
+    top: 6.4rem;
+    right: 1.25rem;
+    left: 1.25rem;
+    width: auto;
+  }
+
+  .eyebrow {
+    max-width: 14rem;
+    font-size: 0.56rem;
+  }
+
+  .heroCopy h1 {
+    margin-top: 0.75rem;
+    font-size: clamp(4.2rem, 19vw, 6rem);
+    line-height: 0.77;
+  }
+
+  .kineticTitle {
+    font-size: 0.61em;
+  }
+
+  .heroText {
+    max-width: 19rem;
+    margin-top: 1.35rem;
+    font-size: 0.78rem;
+    line-height: 1.6;
+  }
+
+  .heroLink {
+    margin-top: 1rem;
+    font-size: 0.57rem;
+  }
+
+  .scrollCue {
+    bottom: 1.5rem;
+    left: 1.25rem;
+  }
+
+  .scrollCue i {
+    width: 1.45rem;
+    height: 2.35rem;
+  }
+
+  .progressRail {
+    right: 1.25rem;
+    bottom: 1.8rem;
+    grid-template-columns: auto 2.5rem auto;
+  }
+
+  .progressRail i {
+    width: 2.5rem;
+  }
+
+  .portalCopy strong {
+    font-size: clamp(4rem, 18vw, 6rem);
+  }
+}
+
+@media (max-height: 700px) and (min-width: 720px) {
+  .stickyScene {
+    min-height: 0;
+  }
+
+  .heroCopy {
+    top: 6rem;
+    width: 34vw;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(3.6rem, 6vw, 5rem);
+  }
+
+  .heroText {
+    display: none;
+  }
+
+  .heroLink {
+    margin-top: 1rem;
+  }
+
+  .scrollCue {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .experience {
+    height: 100svh;
+  }
+
+  .scrollCue,
+  .progressRail {
+    display: none;
+  }
+
+  .stickyScene::after {
+    display: none;
+  }
+
+  .heroCopy {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

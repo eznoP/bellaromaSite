@@ -1,0 +1,15 @@
+.root {
+  display: block;
+}
+
+.character {
+  display: inline-block;
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .character {
+    will-change: auto;
+  }
+}
