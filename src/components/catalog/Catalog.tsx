@@ -1,10 +1,9 @@
 "use client";
 
 import { createScope, createTimeline, onScroll } from "animejs";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getWhatsAppHref } from "@/lib/whatsapp";
 import type { Product } from "@/lib/product";
-import { ProductArtwork } from "./ProductArtwork";
 import styles from "./catalog.module.css";
 
 const previewCards = [
@@ -16,6 +15,7 @@ const previewCards = [
 
 export function Catalog({ products }: { products: Product[] }) {
   const root = useRef<HTMLElement>(null);
+  const [activeImages, setActiveImages] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const section = root.current;
@@ -69,27 +69,39 @@ export function Catalog({ products }: { products: Product[] }) {
     <section id="catalogo" ref={root} className={styles.catalog} aria-labelledby="catalog-title">
       <header className={styles.catalogHeader} data-catalog-heading>
         <div>
-          <p className={styles.eyebrow}>{products.length ? "Produtos disponíveis" : "Catálogo Bellaroma"}</p>
+          <p className={styles.eyebrow}>{products.length ? "Produtos disponíveis" : "Em breve"}</p>
           <h2 id="catalog-title">
-            Feitos para morar
+            Catálogo
             <br />
-            <em>com você.</em>
+            <em>Bellaroma.</em>
           </h2>
         </div>
         <div className={styles.catalogNote}>
           <span>{collectionLabel}</span>
           <p>{products.length
-            ? "Cada coleção nasce em pequena escala. Consulte cores, medidas e disponibilidade pelo WhatsApp."
-            : "Os primeiros produtos serão apresentados aqui. Os cards abaixo mostram como a futura coleção ocupará a vitrine."
+            ? "Consulte pelo WhatsApp as medidas, cores e a disponibilidade de cada produto."
+            : "O catálogo está sendo preparado. Os produtos disponíveis aparecerão aqui."
           }</p>
         </div>
       </header>
 
       <div className={styles.productGrid} data-catalog-grid>
         {products.map((product, index) => {
+          const activeImage = product.imageUrls.length > 0
+            ? Math.min(activeImages[product.id] || 0, product.imageUrls.length - 1)
+            : 0;
           const href = getWhatsAppHref(
-            `Olá! Quero saber mais sobre ${product.category.toLowerCase()} da Bellaroma.`,
+            `Olá! Quero saber mais sobre ${product.name} da Bellaroma.`,
           );
+
+          function showImage(nextIndex: number) {
+            const total = product.imageUrls.length;
+            if (total < 2) return;
+            setActiveImages((current) => ({
+              ...current,
+              [product.id]: (nextIndex + total) % total,
+            }));
+          }
 
           return (
             <article
@@ -99,37 +111,55 @@ export function Catalog({ products }: { products: Product[] }) {
               data-tone={product.tone}
               key={product.id}
             >
-              <a
-                className={styles.cardLink}
-                href={href}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`Consultar ${product.category} pelo WhatsApp`}
-              >
+              <div className={styles.cardContent}>
                 <div className={styles.cardMeta}>
                   <span>{String(index + 1).padStart(2, "0")}</span>
-                  <span>{product.category}</span>
+                  <span>{product.category || "Bellaroma"}</span>
                 </div>
                 <div className={styles.cardVisual}>
-                  {product.imageUrl ? (
-                    // A URL é validada pelo servidor antes de entrar no catálogo.
+                  {product.imageUrls[activeImage] ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.imageUrl} alt={product.name} />
+                    <img src={product.imageUrls[activeImage]} alt={`${product.name}, imagem ${activeImage + 1}`} />
                   ) : (
-                    <ProductArtwork kind={product.artwork} />
+                    <span className={styles.missingImage}>Imagem indisponível</span>
+                  )}
+                  {product.imageUrls.length > 1 && (
+                    <>
+                      <div className={styles.galleryArrows}>
+                        <button type="button" onClick={() => showImage(activeImage - 1)} aria-label="Imagem anterior">←</button>
+                        <button type="button" onClick={() => showImage(activeImage + 1)} aria-label="Próxima imagem">→</button>
+                      </div>
+                      <div className={styles.galleryDots} aria-label={`${product.imageUrls.length} imagens`}>
+                        {product.imageUrls.map((url, imageIndex) => (
+                          <button
+                            type="button"
+                            data-active={imageIndex === activeImage}
+                            onClick={() => showImage(imageIndex)}
+                            aria-label={`Mostrar imagem ${imageIndex + 1}`}
+                            key={url}
+                          />
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
                 <div className={styles.cardInfo}>
                   <div>
                     <h3>{product.name}</h3>
-                    <p>{product.description}</p>
+                    {product.description && <p>{product.description}</p>}
                     {product.price && <strong className={styles.cardPrice}>{product.price}</strong>}
                   </div>
-                  <span className={styles.cardAction} aria-hidden="true">
+                  <a
+                    className={styles.cardAction}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Consultar ${product.name} pelo WhatsApp`}
+                  >
                     Consultar <i>↗</i>
-                  </span>
+                  </a>
                 </div>
-              </a>
+              </div>
             </article>
           );
         })}
@@ -153,8 +183,8 @@ export function Catalog({ products }: { products: Product[] }) {
               </div>
               <div className={styles.previewInfo}>
                 <div>
-                  <h3>Espaço para uma nova peça</h3>
-                  <p>Imagem, detalhes e disponibilidade serão publicados aqui.</p>
+                  <h3>Produto em breve</h3>
+                  <p>Este espaço será preenchido quando um produto for cadastrado.</p>
                 </div>
                 <span aria-hidden="true">Bellaroma</span>
               </div>

@@ -4,7 +4,7 @@ import { useDeferredValue, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/brand/BrandMark";
-import { ProductArtwork } from "@/components/catalog/ProductArtwork";
+import type { Category } from "@/lib/category";
 import { toProductInput, type Product, type ProductInput } from "@/lib/product";
 import { ProductEditor } from "./ProductEditor";
 import styles from "./admin.module.css";
@@ -18,9 +18,19 @@ async function readResponse<T>(response: Response): Promise<T> {
   return data;
 }
 
-export function AdminDashboard({ initialProducts }: { initialProducts: Product[] }) {
+export function AdminDashboard({
+  initialProducts,
+  initialCategories,
+  uploadsConfigured,
+}: {
+  initialProducts: Product[];
+  initialCategories: Category[];
+  uploadsConfigured: boolean;
+}) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
+  const [categories, setCategories] = useState(initialCategories);
+  const [categoryName, setCategoryName] = useState("");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase("pt-BR"));
   const [filter, setFilter] = useState<Filter>("all");
@@ -67,8 +77,48 @@ export function AdminDashboard({ initialProducts }: { initialProducts: Product[]
         setEditingId(null);
       });
       setNotice(creating ? "Produto adicionado ao acervo." : "Alterações salvas.");
+      return true;
     } catch (reason) {
       setNotice(reason instanceof Error ? reason.message : "Não foi possível salvar.");
+      return false;
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function addCategory(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy("category");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: categoryName }),
+      });
+      const data = await readResponse<{ category: Category }>(response);
+      startTransition(() => setCategories((current) => [...current, data.category]
+        .sort((left, right) => left.name.localeCompare(right.name, "pt-BR"))));
+      setCategoryName("");
+      setNotice("Categoria adicionada.");
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "Não foi possível adicionar a categoria.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function removeCategory(category: Category) {
+    if (!window.confirm(`Excluir a categoria “${category.name}”?`)) return;
+    setBusy(`category-${category.id}`);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/categories/${category.id}`, { method: "DELETE" });
+      await readResponse(response);
+      startTransition(() => setCategories((current) => current.filter((item) => item.id !== category.id)));
+      setNotice("Categoria excluída.");
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : "Não foi possível excluir a categoria.");
     } finally {
       setBusy("");
     }
@@ -191,7 +241,8 @@ export function AdminDashboard({ initialProducts }: { initialProducts: Product[]
         <nav aria-label="Navegação administrativa">
           <a href="#produtos"><span>01</span> Acervo</a>
           <button type="button" onClick={() => openEditor("new")}><span>02</span> Novo produto</button>
-          <a href="/" target="_blank" rel="noreferrer"><span>03</span> Ver site ↗</a>
+          <a href="#categorias"><span>03</span> Categorias</a>
+          <a href="/" target="_blank" rel="noreferrer"><span>04</span> Ver site ↗</a>
         </nav>
         <div className={styles.sidebarFooter}>
           <span><i /> Sessão protegida</span>
@@ -203,7 +254,7 @@ export function AdminDashboard({ initialProducts }: { initialProducts: Product[]
         <header className={styles.dashboardHeader}>
           <div>
             <p className={styles.kicker}>Gestão do catálogo</p>
-            <h1>Cuide da vitrine<br /><em>com a mesma calma.</em></h1>
+            <h1>Gerencie produtos<br /><em>e categorias.</em></h1>
           </div>
           <div className={styles.headerActions}>
             <button className={styles.secondaryButton} type="button" onClick={exportProducts}>Exportar backup</button>
@@ -218,7 +269,57 @@ export function AdminDashboard({ initialProducts }: { initialProducts: Product[]
           <article><span>Última ação</span><p>{notice || "Tudo organizado"}</p></article>
         </section>
 
-        <div className={styles.workspace} data-editor-open={Boolean(editingId)}>
+        {!uploadsConfigured && (
+          <aside className={styles.storageNotice}>
+            <div>
+              <strong>Falta conectar o armazenamento de imagens</strong>
+              <p>Crie um Vercel Blob Store e conecte-o a este projeto para liberar o envio de fotos.</p>
+            </div>
+            <a href="https://vercel.com/docs/vercel-blob" target="_blank" rel="noreferrer">Ver instruções ↗</a>
+          </aside>
+        )}
+
+        <div className={styles.workspace}>
+          <section id="categorias" className={styles.categoryManager} aria-labelledby="categories-title">
+            <div className={styles.categoryIntro}>
+              <p className={styles.kicker}>Organização</p>
+              <h2 id="categories-title">Categorias</h2>
+              <p>Crie as categorias quando estiver pronta. Depois disso, elas aparecerão para seleção ao cadastrar um produto.</p>
+            </div>
+            <div className={styles.categoryContent}>
+              <form className={styles.categoryForm} onSubmit={addCategory}>
+                <label>
+                  <span>Nova categoria</span>
+                  <input
+                    value={categoryName}
+                    onChange={(event) => setCategoryName(event.target.value)}
+                    placeholder="Ex.: Jogos americanos"
+                    minLength={2}
+                    maxLength={60}
+                    required
+                  />
+                </label>
+                <button className={styles.primaryButton} type="submit" disabled={busy === "category"}>
+                  {busy === "category" ? "Adicionando…" : "Adicionar categoria"}
+                </button>
+              </form>
+              <div className={styles.categoryList} aria-label="Categorias cadastradas">
+                {categories.map((category) => (
+                  <span key={category.id}>
+                    {category.name}
+                    <button
+                      type="button"
+                      onClick={() => void removeCategory(category)}
+                      disabled={busy === `category-${category.id}`}
+                      aria-label={`Excluir categoria ${category.name}`}
+                    >×</button>
+                  </span>
+                ))}
+                {categories.length === 0 && <p>Nenhuma categoria cadastrada por enquanto.</p>}
+              </div>
+            </div>
+          </section>
+
           <section id="produtos" className={styles.inventory} aria-labelledby="inventory-title">
             <div className={styles.inventoryHeading}>
               <div>
@@ -259,11 +360,11 @@ export function AdminDashboard({ initialProducts }: { initialProducts: Product[]
                 return (
                   <article className={styles.productRow} key={product.id}>
                     <div className={styles.productThumb} data-tone={product.tone}>
-                      {product.imageUrl ? (
+                      {product.imageUrls[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={product.imageUrl} alt="" />
+                        <img src={product.imageUrls[0]} alt="" />
                       ) : (
-                        <ProductArtwork kind={product.artwork} />
+                        <span>Sem foto</span>
                       )}
                     </div>
                     <div className={styles.productSummary}>
@@ -316,16 +417,19 @@ export function AdminDashboard({ initialProducts }: { initialProducts: Product[]
             </div>
           </section>
 
-          {editingId && (
-            <ProductEditor
-              key={editingId}
-              product={editingProduct}
-              saving={busy === "save"}
-              onCancel={() => setEditingId(null)}
-              onSave={saveProduct}
-            />
-          )}
         </div>
+
+        {editingId && (
+          <ProductEditor
+            key={editingId}
+            product={editingProduct}
+            categories={categories}
+            uploadsConfigured={uploadsConfigured}
+            saving={busy === "save"}
+            onCancel={() => setEditingId(null)}
+            onSave={saveProduct}
+          />
+        )}
 
         <div className={styles.liveNotice} aria-live="polite">{notice}</div>
       </main>

@@ -25,7 +25,7 @@ export default async function Home() {
         </a>
         <nav className={styles.navigation} aria-label="Navegação principal">
           <a href="#catalogo">Produtos</a>
-          <a href="#feito-a-mao">Feito à mão</a>
+          <a href="#detalhes">Detalhes</a>
           <a href="#contato">Contato</a>
         </nav>
         <a
@@ -42,9 +42,9 @@ export default async function Home() {
         <HouseScrollExperience />
         <Catalog products={products} />
 
-        <section id="feito-a-mao" className={styles.craft} aria-labelledby="craft-title">
+        <section id="detalhes" className={styles.craft} aria-labelledby="craft-title">
           <div className={styles.craftIntro}>
-            <p className={styles.eyebrow}>Nosso jeito de fazer</p>
+            <p className={styles.eyebrow}>Detalhes</p>
             <h2 id="craft-title">
               A beleza mora
               <br />
@@ -54,18 +54,18 @@ export default async function Home() {
           <div className={styles.craftNotes}>
             <article>
               <span>01</span>
-              <h3>Escolha cuidadosa</h3>
-              <p>Tecidos, aromas e acabamentos escolhidos pelo toque e pela duração.</p>
+              <h3>Feito à mão com carinho</h3>
+              <p>Cada peça é produzida com atenção em todas as etapas, do corte ao acabamento.</p>
             </article>
             <article>
               <span>02</span>
-              <h3>Feito em pequena escala</h3>
-              <p>Cada peça passa pelas mesmas mãos, do primeiro corte ao último ponto.</p>
+              <h3>Acabamento sofisticado</h3>
+              <p>Costuras alinhadas, combinações elegantes e detalhes pensados para valorizar cada ambiente.</p>
             </article>
             <article>
               <span>03</span>
-              <h3>Do seu jeito</h3>
-              <p>Cores e medidas podem acompanhar a história e os espaços da sua casa.</p>
+              <h3>Qualidade em cada detalhe</h3>
+              <p>Materiais selecionados e produção cuidadosa para entregar beleza, resistência e conforto.</p>
             </article>
           </div>
         </section>
@@ -74,28 +74,25 @@ export default async function Home() {
           <div className={styles.contactQuestion}>
             <p className={styles.eyebrow}>Peças sob medida</p>
             <h2 id="contact-title">
-              Não encontrou
+              Não achou sua
               <br />
-              <em>o que imaginou?</em>
+              <em>peça desejada?</em>
             </h2>
           </div>
           <div className={styles.contactAnswer}>
             <p>
-              Conte sua ideia, as medidas e as cores que moram aí. A gente desenha
-              uma peça só sua, com calma e em boa conversa.
+              Entre em contato e, com um acordo, faremos sua peça dos sonhos!
             </p>
             <a href={customOrderHref} target="_blank" rel="noreferrer">
               Conversar pelo WhatsApp
               <span aria-hidden="true">↗</span>
             </a>
-            <small>Atendimento online · Enviamos para todo o Brasil</small>
           </div>
         </section>
       </main>
 
       <footer className={styles.footer}>
         <div className={styles.footerTopline}>
-          <p>Costura artesanal para dentro de casa.</p>
           <a href="#inicio">Voltar ao início ↑</a>
         </div>
         <BrandMark className={styles.footerBrand} />
@@ -103,10 +100,9 @@ export default async function Home() {
           <span>© {new Date().getFullYear()} Bellaroma</span>
           <nav aria-label="Navegação do rodapé">
             <a href="#catalogo">Produtos</a>
-            <a href="#feito-a-mao">Feito à mão</a>
+            <a href="#detalhes">Detalhes</a>
             <a href="#contato">Contato</a>
           </nav>
-          <span>Feito com tempo, em Minas Gerais</span>
         </div>
       </footer>
     </div>

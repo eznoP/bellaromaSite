@@ -1,7 +1,13 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminConfigured, isAdminRequestAuthenticated, isSameOrigin } from "@/lib/admin-auth";
-import { deleteProduct, updateProduct } from "@/lib/product-repository";
+import { deleteProductImages } from "@/lib/blob-store";
+import {
+  deleteProduct,
+  getProduct,
+  getUnreferencedImageUrls,
+  updateProduct,
+} from "@/lib/product-repository";
 import { getValidationErrors, productPatchSchema } from "@/lib/product-schema";
 
 export const runtime = "nodejs";
@@ -36,12 +42,21 @@ export async function PATCH(
     }
 
     const { id } = await params;
+    const current = await getProduct(id);
+    if (!current) {
+      return NextResponse.json({ error: "Produto não encontrado." }, { status: 404 });
+    }
     const product = await updateProduct(id, parsed.data);
     if (!product) {
       return NextResponse.json({ error: "Produto não encontrado." }, { status: 404 });
     }
 
     revalidatePath("/");
+    if (parsed.data.imageUrls) {
+      const retained = new Set(product.imageUrls);
+      const removed = current.imageUrls.filter((url) => !retained.has(url));
+      await deleteProductImages(await getUnreferencedImageUrls(removed)).catch(() => undefined);
+    }
     return NextResponse.json({ product });
   } catch {
     return NextResponse.json({ error: "Não foi possível atualizar o produto." }, { status: 500 });
@@ -57,11 +72,16 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const product = await getProduct(id);
+    if (!product) {
+      return NextResponse.json({ error: "Produto não encontrado." }, { status: 404 });
+    }
     if (!(await deleteProduct(id))) {
       return NextResponse.json({ error: "Produto não encontrado." }, { status: 404 });
     }
 
     revalidatePath("/");
+    await deleteProductImages(await getUnreferencedImageUrls(product.imageUrls)).catch(() => undefined);
     return new NextResponse(null, { status: 204 });
   } catch {
     return NextResponse.json({ error: "Não foi possível excluir o produto." }, { status: 500 });

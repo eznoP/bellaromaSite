@@ -9,8 +9,7 @@ type ProductRow = {
   category: string;
   description: string;
   price: string;
-  imageUrl: string;
-  artwork: Product["artwork"];
+  imageUrls: string[];
   size: Product["size"];
   tone: Product["tone"];
   published: boolean;
@@ -22,6 +21,7 @@ type ProductRow = {
 function toProduct(row: ProductRow): Product {
   return {
     ...row,
+    imageUrls: Array.isArray(row.imageUrls) ? row.imageUrls : [],
     order: Number(row.order),
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
@@ -34,8 +34,7 @@ const productColumns = `
   category,
   description,
   price,
-  image_url AS "imageUrl",
-  artwork,
+  image_urls AS "imageUrls",
   size,
   tone,
   published,
@@ -67,15 +66,26 @@ export async function listProducts(options: { publishedOnly?: boolean } = {}) {
   return rows.map(toProduct);
 }
 
+export async function getProduct(id: string) {
+  return findProduct(id);
+}
+
+export async function getUnreferencedImageUrls(urls: string[]) {
+  if (urls.length === 0) return [];
+  const products = await listProducts();
+  const referenced = new Set(products.flatMap((product) => product.imageUrls));
+  return urls.filter((url) => !referenced.has(url));
+}
+
 export async function createProduct(input: ProductInput) {
   await ensureProductSchema();
   const sql = getDatabase();
   const id = randomUUID();
   const rows = await sql.query(
     `INSERT INTO public.products (
-       id, name, category, description, price, image_url, artwork, size, tone, published, sort_order
+       id, name, category, description, price, image_url, image_urls, artwork, size, tone, published, sort_order
      ) VALUES (
-       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+       $1, $2, $3, $4, $5, $6, $7::jsonb, 'custom', $8, $9, $10,
        (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM public.products)
      )
      RETURNING ${productColumns}`,
@@ -85,8 +95,8 @@ export async function createProduct(input: ProductInput) {
       input.category,
       input.description,
       input.price,
-      input.imageUrl,
-      input.artwork,
+      input.imageUrls[0],
+      JSON.stringify(input.imageUrls),
       input.size,
       input.tone,
       input.published,
@@ -105,8 +115,7 @@ export async function updateProduct(id: string, patch: Partial<ProductInput>) {
     category: patch.category ?? current.category,
     description: patch.description ?? current.description,
     price: patch.price ?? current.price,
-    imageUrl: patch.imageUrl ?? current.imageUrl,
-    artwork: patch.artwork ?? current.artwork,
+    imageUrls: patch.imageUrls ?? current.imageUrls,
     size: patch.size ?? current.size,
     tone: patch.tone ?? current.tone,
     published: patch.published ?? current.published,
@@ -120,7 +129,7 @@ export async function updateProduct(id: string, patch: Partial<ProductInput>) {
          description = $4,
          price = $5,
          image_url = $6,
-         artwork = $7,
+         image_urls = $7::jsonb,
          size = $8,
          tone = $9,
          published = $10,
@@ -133,8 +142,8 @@ export async function updateProduct(id: string, patch: Partial<ProductInput>) {
       next.category,
       next.description,
       next.price,
-      next.imageUrl,
-      next.artwork,
+      next.imageUrls[0],
+      JSON.stringify(next.imageUrls),
       next.size,
       next.tone,
       next.published,

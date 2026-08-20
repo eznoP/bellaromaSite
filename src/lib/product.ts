@@ -1,16 +1,6 @@
-export const PRODUCT_ARTWORKS = [
-  "table",
-  "pillow",
-  "bottle",
-  "aroma",
-  "soap",
-  "custom",
-] as const;
-
 export const PRODUCT_SIZES = ["wide", "tall", "compact", "medium", "long"] as const;
 export const PRODUCT_TONES = ["olive", "ivory", "linen", "deep", "sage"] as const;
 
-export type ProductArtworkKind = (typeof PRODUCT_ARTWORKS)[number];
 export type ProductSize = (typeof PRODUCT_SIZES)[number];
 export type ProductTone = (typeof PRODUCT_TONES)[number];
 
@@ -19,8 +9,7 @@ export type ProductInput = {
   category: string;
   description: string;
   price: string;
-  imageUrl: string;
-  artwork: ProductArtworkKind;
+  imageUrls: string[];
   size: ProductSize;
   tone: ProductTone;
   published: boolean;
@@ -33,21 +22,20 @@ export type Product = ProductInput & {
   updatedAt: string;
 };
 
-export const PRODUCT_ARTWORK_LABELS: Record<ProductArtworkKind, string> = {
-  table: "Mesa posta",
-  pillow: "Almofada",
-  bottle: "Garrafa",
-  aroma: "Aromas",
-  soap: "Sabonete",
-  custom: "Sob medida",
+export const PRODUCT_SIZE_LABELS: Record<ProductSize, string> = {
+  wide: "Destaque grande",
+  tall: "Vertical",
+  compact: "Compacto",
+  medium: "Horizontal",
+  long: "Panorâmico",
 };
 
-export const PRODUCT_SIZE_LABELS: Record<ProductSize, string> = {
-  wide: "Destaque largo",
-  tall: "Destaque alto",
-  compact: "Compacto",
-  medium: "Médio",
-  long: "Faixa larga",
+export const PRODUCT_SIZE_DESCRIPTIONS: Record<ProductSize, string> = {
+  wide: "Ocupa uma área grande e quadrada. Ideal para produtos com várias peças.",
+  tall: "Valoriza fotografias feitas em pé e produtos mais altos.",
+  compact: "Card menor para uma peça única ou fotografia aproximada.",
+  medium: "Card deitado para fotografias horizontais, como jogos americanos.",
+  long: "Faixa ampla para conjuntos completos ou composições panorâmicas.",
 };
 
 export const PRODUCT_TONE_LABELS: Record<ProductTone, string> = {
@@ -64,8 +52,7 @@ export function toProductInput(product: Product): ProductInput {
     category: product.category,
     description: product.description,
     price: product.price,
-    imageUrl: product.imageUrl,
-    artwork: product.artwork,
+    imageUrls: product.imageUrls,
     size: product.size,
     tone: product.tone,
     published: product.published,
