@@ -9,6 +9,7 @@ Site institucional e catálogo da Bellaroma, uma marca de costura artesanal. A p
 - React Three Fiber, Drei e Three.js para a casa 3D procedural
 - Anime.js 4 para a timeline, o scroll scrubbing e os reveals
 - Zod para validar produtos recebidos pelo painel administrativo
+- Neon Postgres para persistir o catálogo na Vercel
 
 ## Executar
 
@@ -25,6 +26,7 @@ Acesse `http://localhost:3000`.
 Preencha estas variáveis em `.env.local`:
 
 ```dotenv
+DATABASE_URL=postgresql://usuario:senha@host-pooler.neon.tech/neondb?sslmode=require
 NEXT_PUBLIC_SITE_URL=https://bellaroma.com.br
 NEXT_PUBLIC_WHATSAPP_NUMBER=5531999999999
 ADMIN_PASSWORD=uma-senha-forte
@@ -34,6 +36,8 @@ ADMIN_SESSION_SECRET=uma-chave-aleatoria-com-32-caracteres-ou-mais
 O número do WhatsApp deve conter apenas código do país, DDD e número. Sem essa variável, os links abrem o WhatsApp com a mensagem pronta, mas sem um destinatário definido.
 
 `ADMIN_PASSWORD` libera o painel em `/admin`. `ADMIN_SESSION_SECRET` assina a sessão HTTP-only e precisa ter pelo menos 32 caracteres. Gere uma chave, por exemplo, com `openssl rand -base64 32`.
+
+Na Vercel, configure as variáveis em **Settings → Environment Variables** para Production e Preview e faça um novo deployment. A integração do Neon normalmente cria `DATABASE_URL` automaticamente. Nunca use o prefixo `NEXT_PUBLIC_` em credenciais ou segredos.
 
 ## Painel administrativo
 
@@ -46,7 +50,7 @@ O painel em `/admin` gerencia a mesma fonte de dados exibida no catálogo. Ele o
 - imagem por URL ou ilustrações procedurais existentes;
 - exportação do acervo em JSON.
 
-Os dados ficam em `data/products.json` e as escritas usam arquivo temporário seguido de renomeação atômica. Essa estratégia funciona em desenvolvimento e servidores Node com disco persistente. Em plataformas serverless com sistema de arquivos efêmero, substitua `src/lib/product-repository.ts` por um repositório de banco de dados; os componentes e APIs não precisam ser reescritos.
+Os dados ficam na tabela `public.products` do Neon. O esquema é validado na primeira consulta, os seis registros demonstrativos da versão inicial são removidos e o catálogo vazio mostra somente cards visuais de prévia. Produtos criados pelo painel persistem entre deployments da Vercel.
 
 ## Experiência 3D
 
@@ -86,5 +90,5 @@ src/
 │   ├── catalog/               # Grid e ilustrações de produtos
 │   ├── experience/            # Cena 3D e timeline de entrada
 │   └── motion/                # KineticTextReveal com Anime.js
-└── lib/                       # Domínio, autenticação, persistência e WhatsApp
+└── lib/                       # Neon, domínio, autenticação, persistência e WhatsApp
 ```

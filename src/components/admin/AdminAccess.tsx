@@ -79,8 +79,9 @@ export function AdminAccess({ configured }: { configured: boolean }) {
           </form>
         ) : (
           <div className={styles.setupGuide}>
-            <p>Adicione as variáveis abaixo ao arquivo <code>.env.local</code> e reinicie o servidor:</p>
-            <pre><code>ADMIN_PASSWORD=uma-senha-forte{"\n"}ADMIN_SESSION_SECRET=uma-chave-com-pelo-menos-32-caracteres</code></pre>
+            <p>No projeto da Vercel, abra <code>Environment Variables</code> e configure:</p>
+            <pre><code>DATABASE_URL=conexão-do-neon{"\n"}ADMIN_PASSWORD=sua-senha-forte{"\n"}ADMIN_SESSION_SECRET=uma-chave-com-pelo-menos-32-caracteres</code></pre>
+            <p>Marque Production e Preview, salve e faça um novo deployment.</p>
             <p>O catálogo continua público, mas nenhuma alteração é aceita sem uma sessão válida.</p>
           </div>
         )}

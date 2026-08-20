@@ -1,115 +1,190 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { ensureProductSchema, getDatabase } from "@/lib/database";
 import type { Product, ProductInput } from "@/lib/product";
-import { storedProductsSchema } from "@/lib/product-schema";
 
-const productsFile = join(process.cwd(), "data", "products.json");
+type ProductRow = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: string;
+  imageUrl: string;
+  artwork: Product["artwork"];
+  size: Product["size"];
+  tone: Product["tone"];
+  published: boolean;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+};
 
-let mutationQueue: Promise<unknown> = Promise.resolve();
-
-async function readProductsFile(): Promise<Product[]> {
-  const contents = await readFile(productsFile, "utf8");
-  const parsed = storedProductsSchema.safeParse(JSON.parse(contents));
-
-  if (!parsed.success) {
-    throw new Error("O arquivo de produtos contém dados inválidos.");
-  }
-
-  return parsed.data.sort((left, right) => left.order - right.order);
+function toProduct(row: ProductRow): Product {
+  return {
+    ...row,
+    order: Number(row.order),
+    createdAt: new Date(row.createdAt).toISOString(),
+    updatedAt: new Date(row.updatedAt).toISOString(),
+  };
 }
 
-async function writeProductsFile(products: Product[]) {
-  await mkdir(dirname(productsFile), { recursive: true });
-  const temporaryFile = `${productsFile}.${process.pid}.${Date.now()}.tmp`;
-  await writeFile(temporaryFile, `${JSON.stringify(products, null, 2)}\n`, "utf8");
-  await rename(temporaryFile, productsFile);
-}
+const productColumns = `
+  id,
+  name,
+  category,
+  description,
+  price,
+  image_url AS "imageUrl",
+  artwork,
+  size,
+  tone,
+  published,
+  sort_order AS "order",
+  created_at AS "createdAt",
+  updated_at AS "updatedAt"
+`;
 
-function serializeMutation<T>(operation: () => Promise<T>): Promise<T> {
-  const next = mutationQueue.then(operation, operation);
-  mutationQueue = next.then(
-    () => undefined,
-    () => undefined,
-  );
-  return next;
+async function findProduct(id: string) {
+  await ensureProductSchema();
+  const sql = getDatabase();
+  const rows = await sql.query(
+    `SELECT ${productColumns} FROM public.products WHERE id = $1 LIMIT 1`,
+    [id],
+  ) as ProductRow[];
+  return rows[0] ? toProduct(rows[0]) : null;
 }
 
 export async function listProducts(options: { publishedOnly?: boolean } = {}) {
-  const products = await readProductsFile();
-  return options.publishedOnly ? products.filter((product) => product.published) : products;
+  await ensureProductSchema();
+  const sql = getDatabase();
+  const rows = await sql.query(
+    `SELECT ${productColumns}
+     FROM public.products
+     WHERE ($1::boolean = FALSE OR published = TRUE)
+     ORDER BY sort_order ASC, created_at ASC`,
+    [Boolean(options.publishedOnly)],
+  ) as ProductRow[];
+  return rows.map(toProduct);
 }
 
 export async function createProduct(input: ProductInput) {
-  return serializeMutation(async () => {
-    const products = await readProductsFile();
-    const now = new Date().toISOString();
-    const product: Product = {
-      ...input,
-      id: randomUUID(),
-      order: products.length,
-      createdAt: now,
-      updatedAt: now,
-    };
+  await ensureProductSchema();
+  const sql = getDatabase();
+  const id = randomUUID();
+  const rows = await sql.query(
+    `INSERT INTO public.products (
+       id, name, category, description, price, image_url, artwork, size, tone, published, sort_order
+     ) VALUES (
+       $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+       (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM public.products)
+     )
+     RETURNING ${productColumns}`,
+    [
+      id,
+      input.name,
+      input.category,
+      input.description,
+      input.price,
+      input.imageUrl,
+      input.artwork,
+      input.size,
+      input.tone,
+      input.published,
+    ],
+  ) as ProductRow[];
 
-    products.push(product);
-    await writeProductsFile(products);
-    return product;
-  });
+  return toProduct(rows[0]);
 }
 
 export async function updateProduct(id: string, patch: Partial<ProductInput>) {
-  return serializeMutation(async () => {
-    const products = await readProductsFile();
-    const index = products.findIndex((product) => product.id === id);
-    if (index < 0) return null;
+  const current = await findProduct(id);
+  if (!current) return null;
 
-    const product: Product = {
-      ...products[index],
-      ...patch,
-      updatedAt: new Date().toISOString(),
-    };
-    products[index] = product;
-    await writeProductsFile(products);
-    return product;
-  });
+  const next: ProductInput = {
+    name: patch.name ?? current.name,
+    category: patch.category ?? current.category,
+    description: patch.description ?? current.description,
+    price: patch.price ?? current.price,
+    imageUrl: patch.imageUrl ?? current.imageUrl,
+    artwork: patch.artwork ?? current.artwork,
+    size: patch.size ?? current.size,
+    tone: patch.tone ?? current.tone,
+    published: patch.published ?? current.published,
+  };
+
+  const sql = getDatabase();
+  const rows = await sql.query(
+    `UPDATE public.products
+     SET name = $2,
+         category = $3,
+         description = $4,
+         price = $5,
+         image_url = $6,
+         artwork = $7,
+         size = $8,
+         tone = $9,
+         published = $10,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING ${productColumns}`,
+    [
+      id,
+      next.name,
+      next.category,
+      next.description,
+      next.price,
+      next.imageUrl,
+      next.artwork,
+      next.size,
+      next.tone,
+      next.published,
+    ],
+  ) as ProductRow[];
+
+  return rows[0] ? toProduct(rows[0]) : null;
 }
 
 export async function deleteProduct(id: string) {
-  return serializeMutation(async () => {
-    const products = await readProductsFile();
-    const nextProducts = products.filter((product) => product.id !== id);
-    if (nextProducts.length === products.length) return false;
+  await ensureProductSchema();
+  const sql = getDatabase();
+  const [deleted] = await sql.transaction((transaction) => [
+    transaction`DELETE FROM public.products WHERE id = ${id} RETURNING id`,
+    transaction`
+      WITH ordered AS (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY sort_order ASC, created_at ASC) - 1 AS next_order
+        FROM public.products
+      )
+      UPDATE public.products AS product
+      SET sort_order = ordered.next_order, updated_at = NOW()
+      FROM ordered
+      WHERE product.id = ordered.id AND product.sort_order <> ordered.next_order
+    `,
+  ]);
 
-    nextProducts.forEach((product, index) => {
-      product.order = index;
-    });
-    await writeProductsFile(nextProducts);
-    return true;
-  });
+  return deleted.length > 0;
 }
 
 export async function reorderProducts(ids: string[]) {
-  return serializeMutation(async () => {
-    const products = await readProductsFile();
-    if (products.length !== ids.length) {
-      throw new Error("A lista de ordenação está desatualizada.");
-    }
+  await ensureProductSchema();
+  const products = await listProducts();
+  if (products.length !== ids.length) {
+    throw new Error("A lista de ordenação está desatualizada.");
+  }
 
-    const productsById = new Map(products.map((product) => [product.id, product]));
-    const reordered = ids.map((id) => productsById.get(id));
-    if (reordered.some((product) => !product)) {
-      throw new Error("A ordenação contém um produto desconhecido.");
-    }
+  const knownIds = new Set(products.map((product) => product.id));
+  if (ids.some((id) => !knownIds.has(id))) {
+    throw new Error("A ordenação contém um produto desconhecido.");
+  }
 
-    const now = new Date().toISOString();
-    const normalized = reordered.map((product, index) => ({
-      ...product!,
-      order: index,
-      updatedAt: now,
-    }));
-    await writeProductsFile(normalized);
-    return normalized;
-  });
+  const sql = getDatabase();
+  const results = await sql.transaction((transaction) => [
+    ...ids.map((id, index) => transaction`
+      UPDATE public.products
+      SET sort_order = ${index}, updated_at = NOW()
+      WHERE id = ${id}
+    `),
+    transaction.query(`SELECT ${productColumns} FROM public.products ORDER BY sort_order ASC, created_at ASC`),
+  ]);
+  const rows = results.at(-1) as ProductRow[];
+  return rows.map(toProduct);
 }

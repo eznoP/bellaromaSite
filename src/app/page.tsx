@@ -1,14 +1,18 @@
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Catalog } from "@/components/catalog/Catalog";
 import { HouseScrollExperience } from "@/components/experience/HouseScrollExperience";
+import { isDatabaseConfigured } from "@/lib/database";
 import { listProducts } from "@/lib/product-repository";
 import { getWhatsAppHref } from "@/lib/whatsapp";
 import styles from "./page.module.css";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const products = await listProducts({ publishedOnly: true });
+  const products = isDatabaseConfigured()
+    ? await listProducts({ publishedOnly: true })
+    : [];
   const customOrderHref = getWhatsAppHref(
     "Olá! Quero conversar sobre uma peça personalizada da Bellaroma.",
   );

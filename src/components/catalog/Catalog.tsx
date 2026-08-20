@@ -7,6 +7,13 @@ import type { Product } from "@/lib/product";
 import { ProductArtwork } from "./ProductArtwork";
 import styles from "./catalog.module.css";
 
+const previewCards = [
+  { size: "wide", tone: "olive" },
+  { size: "tall", tone: "ivory" },
+  { size: "compact", tone: "linen" },
+  { size: "compact", tone: "sage" },
+] as const;
+
 export function Catalog({ products }: { products: Product[] }) {
   const root = useRef<HTMLElement>(null);
 
@@ -56,13 +63,13 @@ export function Catalog({ products }: { products: Product[] }) {
 
   const collectionLabel = products.length
     ? `Acervo 01–${String(products.length).padStart(2, "0")}`
-    : "Acervo em atualização";
+    : "Prévias do catálogo";
 
   return (
     <section id="catalogo" ref={root} className={styles.catalog} aria-labelledby="catalog-title">
       <header className={styles.catalogHeader} data-catalog-heading>
         <div>
-          <p className={styles.eyebrow}>Produtos disponíveis</p>
+          <p className={styles.eyebrow}>{products.length ? "Produtos disponíveis" : "Catálogo Bellaroma"}</p>
           <h2 id="catalog-title">
             Feitos para morar
             <br />
@@ -71,10 +78,10 @@ export function Catalog({ products }: { products: Product[] }) {
         </div>
         <div className={styles.catalogNote}>
           <span>{collectionLabel}</span>
-          <p>
-            Cada coleção nasce em pequena escala. Consulte cores, medidas e
-            disponibilidade pelo WhatsApp.
-          </p>
+          <p>{products.length
+            ? "Cada coleção nasce em pequena escala. Consulte cores, medidas e disponibilidade pelo WhatsApp."
+            : "Os primeiros produtos serão apresentados aqui. Os cards abaixo mostram como a futura coleção ocupará a vitrine."
+          }</p>
         </div>
       </header>
 
@@ -126,16 +133,34 @@ export function Catalog({ products }: { products: Product[] }) {
             </article>
           );
         })}
-        {products.length === 0 && (
-          <div className={styles.emptyCatalog}>
-            <span aria-hidden="true">✦</span>
-            <h3>Novas peças estão sendo preparadas.</h3>
-            <p>Enquanto isso, conte sua ideia para criarmos algo sob medida.</p>
-            <a href={getWhatsAppHref("Olá! Quero conversar sobre uma peça personalizada da Bellaroma.")} target="_blank" rel="noreferrer">
-              Conversar pelo WhatsApp ↗
-            </a>
-          </div>
-        )}
+        {products.length === 0 && previewCards.map((preview, index) => (
+          <article
+            className={`${styles.productCard} ${styles.previewCard}`}
+            data-catalog-card
+            data-size={preview.size}
+            data-tone={preview.tone}
+            key={`${preview.size}-${index}`}
+          >
+            <div className={styles.previewCardInner}>
+              <div className={styles.cardMeta}>
+                <span>Prévia {String(index + 1).padStart(2, "0")}</span>
+                <span>Em breve</span>
+              </div>
+              <div className={styles.previewVisual} aria-hidden="true">
+                <span>+</span>
+                <i />
+                <i />
+              </div>
+              <div className={styles.previewInfo}>
+                <div>
+                  <h3>Espaço para uma nova peça</h3>
+                  <p>Imagem, detalhes e disponibilidade serão publicados aqui.</p>
+                </div>
+                <span aria-hidden="true">Bellaroma</span>
+              </div>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );
