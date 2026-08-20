@@ -199,9 +199,9 @@
 }
 
 .craftNotes h3 {
-  max-width: 13rem;
+  max-width: 16rem;
   font-family: var(--font-display), Georgia, serif;
-  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  font-size: clamp(1.65rem, 2.25vw, 2.15rem);
   font-weight: 500;
   line-height: 1.05;
 }
@@ -209,8 +209,8 @@
 .craftNotes p {
   max-width: 26rem;
   color: var(--ink-soft);
-  font-size: 0.82rem;
-  line-height: 1.75;
+  font-size: clamp(0.95rem, 1.15vw, 1.05rem);
+  line-height: 1.7;
 }
 
 .contact {
@@ -234,7 +234,7 @@
 .contactAnswer > p {
   max-width: 32rem;
   color: var(--ink);
-  font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+  font-size: clamp(1.05rem, 1.5vw, 1.25rem);
   line-height: 1.75;
 }
 
@@ -282,6 +282,7 @@
 }
 
 .footerTopline {
+  justify-content: flex-end;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid rgba(253, 246, 237, 0.25);
 }

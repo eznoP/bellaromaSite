@@ -10,6 +10,7 @@ Site institucional e catálogo da Bellaroma, uma marca de costura artesanal. A p
 - Anime.js 4 para a timeline, o scroll scrubbing e os reveals
 - Zod para validar produtos recebidos pelo painel administrativo
 - Neon Postgres para persistir o catálogo na Vercel
+- Vercel Blob para armazenar as imagens enviadas pelo painel
 
 ## Executar
 
@@ -31,6 +32,7 @@ NEXT_PUBLIC_SITE_URL=https://bellaroma.com.br
 NEXT_PUBLIC_WHATSAPP_NUMBER=5531999999999
 ADMIN_PASSWORD=uma-senha-forte
 ADMIN_SESSION_SECRET=uma-chave-aleatoria-com-32-caracteres-ou-mais
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_seu-token
 ```
 
 O número do WhatsApp deve conter apenas código do país, DDD e número. Sem essa variável, os links abrem o WhatsApp com a mensagem pronta, mas sem um destinatário definido.
@@ -39,15 +41,18 @@ O número do WhatsApp deve conter apenas código do país, DDD e número. Sem es
 
 Na Vercel, configure as variáveis em **Settings → Environment Variables** para Production e Preview e faça um novo deployment. A integração do Neon normalmente cria `DATABASE_URL` automaticamente. Nunca use o prefixo `NEXT_PUBLIC_` em credenciais ou segredos.
 
+Para as fotos, crie um Blob Store em **Vercel → Storage → Blob** e conecte-o ao projeto. A Vercel adicionará `BLOB_READ_WRITE_TOKEN`; faça um novo deployment depois da conexão. O upload aceita JPG, PNG, WebP e AVIF de até 8 MB por arquivo.
+
 ## Painel administrativo
 
 O painel em `/admin` gerencia a mesma fonte de dados exibida no catálogo. Ele oferece:
 
-- criação e edição com prévia do card;
+- upload de 1 a 5 imagens, com escolha da foto de capa;
+- criação e edição com prévia fiel do formato do card;
 - publicação e ocultação sem excluir o item;
 - duplicação, exclusão e ordenação;
 - busca, filtros e indicadores do acervo;
-- imagem por URL ou ilustrações procedurais existentes;
+- cadastro de categorias para seleção nos produtos;
 - exportação do acervo em JSON.
 
 Os dados ficam na tabela `public.products` do Neon. O esquema é validado na primeira consulta, os seis registros demonstrativos da versão inicial são removidos e o catálogo vazio mostra somente cards visuais de prévia. Produtos criados pelo painel persistem entre deployments da Vercel.

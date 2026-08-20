@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { AdminAccess } from "@/components/admin/AdminAccess";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { isAdminAuthenticated, isAdminConfigured } from "@/lib/admin-auth";
+import { isBlobConfigured } from "@/lib/blob-store";
+import { listCategories } from "@/lib/category-repository";
 import { isDatabaseConfigured } from "@/lib/database";
 import { listProducts } from "@/lib/product-repository";
 
@@ -22,5 +24,12 @@ export default async function AdminPage() {
     return <AdminAccess configured={configured} />;
   }
 
-  return <AdminDashboard initialProducts={await listProducts()} />;
+  const [products, categories] = await Promise.all([listProducts(), listCategories()]);
+  return (
+    <AdminDashboard
+      initialProducts={products}
+      initialCategories={categories}
+      uploadsConfigured={isBlobConfigured()}
+    />
+  );
 }

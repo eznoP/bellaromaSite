@@ -75,7 +75,6 @@ export function HouseScrollExperience() {
           145,
         )
         .add("[data-scene-meta]", { opacity: 0, duration: 120 }, 110)
-        .add("[data-scroll-cue]", { opacity: 0, duration: 100 }, 105)
         .add("[data-portal]", { opacity: 1, duration: 180, ease: "inOutQuad" }, 800)
         .add("[data-scene-canvas]", { opacity: 0, duration: 180 }, 820)
         .add(
@@ -98,9 +97,9 @@ export function HouseScrollExperience() {
       <div className={styles.stickyScene}>
         <div className={styles.portal} data-portal aria-hidden="true">
           <div className={styles.portalCopy} data-portal-copy>
-            <p>Você chegou</p>
-            <strong>O catálogo mora aqui.</strong>
-            <span>Continue para conhecer cada peça.</span>
+            <p>Bellaroma</p>
+            <strong>Conheça nosso catálogo.</strong>
+            <span>Veja os produtos disponíveis.</span>
           </div>
         </div>
 
@@ -122,7 +121,7 @@ export function HouseScrollExperience() {
         </div>
 
         <div className={styles.heroCopy} data-hero-copy>
-          <p className={styles.eyebrow}>Costura artesanal para dentro de casa</p>
+          <p className={styles.eyebrow}>Bellaroma</p>
           <h1 id="hero-title">
             <span>Entre.</span>
             <KineticTextReveal
@@ -135,8 +134,7 @@ export function HouseScrollExperience() {
             />
           </h1>
           <p className={styles.heroText}>
-            Peças que guardam o tempo das mãos e levam afeto para os pequenos
-            rituais da sua casa.
+            Peças artesanais para mesa e decoração, produzidas com cuidado em cada acabamento.
           </p>
           <a className={styles.heroLink} href="#catalogo">
             Ir direto ao catálogo <span aria-hidden="true">↓</span>
@@ -154,10 +152,6 @@ export function HouseScrollExperience() {
           <span>02</span>
         </div>
 
-        <div className={styles.scrollCue} data-scroll-cue aria-hidden="true">
-          <i />
-          <span>Role para abrir a porta</span>
-        </div>
       </div>
     </section>
   );

@@ -1,30 +1,30 @@
 import "server-only";
 import { z } from "zod";
-import { PRODUCT_ARTWORKS, PRODUCT_SIZES, PRODUCT_TONES } from "@/lib/product";
+import { PRODUCT_SIZES, PRODUCT_TONES } from "@/lib/product";
 
 const imageUrlSchema = z
   .string()
   .trim()
   .max(2048, "A URL da imagem deve ter no máximo 2048 caracteres.")
   .refine((value) => {
-    if (!value) return true;
-
     try {
       const url = new URL(value);
-      return url.protocol === "http:" || url.protocol === "https:";
+      return url.protocol === "https:";
     } catch {
       return false;
     }
-  }, "Informe uma URL de imagem HTTP ou HTTPS válida.");
+  }, "A imagem enviada não possui uma URL HTTPS válida.");
 
 export const productInputSchema = z
   .object({
     name: z.string().trim().min(2, "Informe um nome.").max(80),
-    category: z.string().trim().min(2, "Informe uma categoria.").max(60),
-    description: z.string().trim().min(8, "Descreva o produto em pelo menos 8 caracteres.").max(240),
+    category: z.string().trim().max(60),
+    description: z.string().trim().max(240),
     price: z.string().trim().max(40),
-    imageUrl: imageUrlSchema,
-    artwork: z.enum(PRODUCT_ARTWORKS),
+    imageUrls: z
+      .array(imageUrlSchema)
+      .min(1, "Adicione pelo menos uma imagem do produto.")
+      .max(5, "Adicione no máximo 5 imagens."),
     size: z.enum(PRODUCT_SIZES),
     tone: z.enum(PRODUCT_TONES),
     published: z.boolean(),

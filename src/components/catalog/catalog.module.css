@@ -117,7 +117,7 @@
 }
 
 .productCard[data-size="long"] {
-  grid-column: span 2;
+  grid-column: span 4;
 }
 
 .productCard[data-tone="olive"] {
@@ -138,7 +138,7 @@
   background: var(--sage-light);
 }
 
-.cardLink {
+.cardContent {
   position: relative;
   z-index: 1;
   display: grid;
@@ -159,6 +159,7 @@
 }
 
 .cardVisual {
+  position: relative;
   display: grid;
   min-height: 0;
   place-items: center;
@@ -172,6 +173,19 @@
   max-height: 21rem;
   object-fit: contain;
   transition: transform 700ms cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.missingImage {
+  display: grid;
+  width: 72%;
+  height: 62%;
+  place-items: center;
+  border: 1px dashed currentColor;
+  border-radius: 1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.5;
 }
 
 .cardInfo {
@@ -219,17 +233,66 @@
   text-transform: uppercase;
 }
 
+.galleryArrows {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  left: 0.35rem;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.galleryArrows button {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  color: var(--olive-dark);
+  background: rgba(253, 246, 237, 0.88);
+  border: 1px solid rgba(36, 48, 40, 0.22);
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.galleryDots {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.35rem 0.45rem;
+  background: rgba(253, 246, 237, 0.82);
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.galleryDots button {
+  width: 0.42rem;
+  height: 0.42rem;
+  padding: 0;
+  background: rgba(36, 48, 40, 0.3);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.galleryDots button[data-active="true"] {
+  background: var(--olive-dark);
+}
+
 .cardAction i {
   font-style: normal;
   transition: transform var(--duration-fast) ease;
 }
 
-.cardLink:hover .cardVisual svg,
-.cardLink:hover .cardVisual img {
+.productCard:hover .cardVisual img {
   transform: scale(1.045) rotate(-1deg);
 }
 
-.cardLink:hover .cardAction i {
+.productCard:hover .cardAction i {
   transform: translate(0.2rem, -0.2rem);
 }
 
