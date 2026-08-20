@@ -58,7 +58,8 @@ export async function PATCH(
       await deleteProductImages(await getUnreferencedImageUrls(removed)).catch(() => undefined);
     }
     return NextResponse.json({ product });
-  } catch {
+  } catch (error) {
+    console.error("Falha ao atualizar produto:", error);
     return NextResponse.json({ error: "Não foi possível atualizar o produto." }, { status: 500 });
   }
 }

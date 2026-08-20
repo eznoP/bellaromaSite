@@ -11,7 +11,6 @@ type ProductRow = {
   price: string;
   imageUrls: string[];
   size: Product["size"];
-  tone: Product["tone"];
   published: boolean;
   order: number;
   createdAt: string;
@@ -36,7 +35,6 @@ const productColumns = `
   price,
   image_urls AS "imageUrls",
   size,
-  tone,
   published,
   sort_order AS "order",
   created_at AS "createdAt",
@@ -47,7 +45,7 @@ async function findProduct(id: string) {
   await ensureProductSchema();
   const sql = getDatabase();
   const rows = await sql.query(
-    `SELECT ${productColumns} FROM public.products WHERE id = $1 LIMIT 1`,
+    `SELECT ${productColumns} FROM public.catalog_products WHERE id = $1 LIMIT 1`,
     [id],
   ) as ProductRow[];
   return rows[0] ? toProduct(rows[0]) : null;
@@ -58,7 +56,7 @@ export async function listProducts(options: { publishedOnly?: boolean } = {}) {
   const sql = getDatabase();
   const rows = await sql.query(
     `SELECT ${productColumns}
-     FROM public.products
+     FROM public.catalog_products
      WHERE ($1::boolean = FALSE OR published = TRUE)
      ORDER BY sort_order ASC, created_at ASC`,
     [Boolean(options.publishedOnly)],
@@ -82,11 +80,11 @@ export async function createProduct(input: ProductInput) {
   const sql = getDatabase();
   const id = randomUUID();
   const rows = await sql.query(
-    `INSERT INTO public.products (
-       id, name, category, description, price, image_url, image_urls, artwork, size, tone, published, sort_order
+    `INSERT INTO public.catalog_products (
+       id, name, category, description, price, image_urls, size, published, sort_order
      ) VALUES (
-       $1, $2, $3, $4, $5, $6, $7::jsonb, 'custom', $8, $9, $10,
-       (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM public.products)
+       $1, $2, $3, $4, $5, $6::jsonb, $7, $8,
+       (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM public.catalog_products)
      )
      RETURNING ${productColumns}`,
     [
@@ -95,10 +93,8 @@ export async function createProduct(input: ProductInput) {
       input.category,
       input.description,
       input.price,
-      input.imageUrls[0],
       JSON.stringify(input.imageUrls),
       input.size,
-      input.tone,
       input.published,
     ],
   ) as ProductRow[];
@@ -117,22 +113,19 @@ export async function updateProduct(id: string, patch: Partial<ProductInput>) {
     price: patch.price ?? current.price,
     imageUrls: patch.imageUrls ?? current.imageUrls,
     size: patch.size ?? current.size,
-    tone: patch.tone ?? current.tone,
     published: patch.published ?? current.published,
   };
 
   const sql = getDatabase();
   const rows = await sql.query(
-    `UPDATE public.products
+    `UPDATE public.catalog_products
      SET name = $2,
          category = $3,
          description = $4,
          price = $5,
-         image_url = $6,
-         image_urls = $7::jsonb,
-         size = $8,
-         tone = $9,
-         published = $10,
+         image_urls = $6::jsonb,
+         size = $7,
+         published = $8,
          updated_at = NOW()
      WHERE id = $1
      RETURNING ${productColumns}`,
@@ -142,10 +135,8 @@ export async function updateProduct(id: string, patch: Partial<ProductInput>) {
       next.category,
       next.description,
       next.price,
-      next.imageUrls[0],
       JSON.stringify(next.imageUrls),
       next.size,
-      next.tone,
       next.published,
     ],
   ) as ProductRow[];
@@ -157,13 +148,13 @@ export async function deleteProduct(id: string) {
   await ensureProductSchema();
   const sql = getDatabase();
   const [deleted] = await sql.transaction((transaction) => [
-    transaction`DELETE FROM public.products WHERE id = ${id} RETURNING id`,
+    transaction`DELETE FROM public.catalog_products WHERE id = ${id} RETURNING id`,
     transaction`
       WITH ordered AS (
         SELECT id, ROW_NUMBER() OVER (ORDER BY sort_order ASC, created_at ASC) - 1 AS next_order
-        FROM public.products
+        FROM public.catalog_products
       )
-      UPDATE public.products AS product
+      UPDATE public.catalog_products AS product
       SET sort_order = ordered.next_order, updated_at = NOW()
       FROM ordered
       WHERE product.id = ordered.id AND product.sort_order <> ordered.next_order
@@ -188,11 +179,11 @@ export async function reorderProducts(ids: string[]) {
   const sql = getDatabase();
   const results = await sql.transaction((transaction) => [
     ...ids.map((id, index) => transaction`
-      UPDATE public.products
+      UPDATE public.catalog_products
       SET sort_order = ${index}, updated_at = NOW()
       WHERE id = ${id}
     `),
-    transaction.query(`SELECT ${productColumns} FROM public.products ORDER BY sort_order ASC, created_at ASC`),
+    transaction.query(`SELECT ${productColumns} FROM public.catalog_products ORDER BY sort_order ASC, created_at ASC`),
   ]);
   const rows = results.at(-1) as ProductRow[];
   return rows.map(toProduct);

@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { PRODUCT_SIZES, PRODUCT_TONES } from "@/lib/product";
+import { PRODUCT_SIZES } from "@/lib/product";
 
 const imageUrlSchema = z
   .string()
@@ -26,7 +26,6 @@ export const productInputSchema = z
       .min(1, "Adicione pelo menos uma imagem do produto.")
       .max(5, "Adicione no máximo 5 imagens."),
     size: z.enum(PRODUCT_SIZES),
-    tone: z.enum(PRODUCT_TONES),
     published: z.boolean(),
   })
   .strict();

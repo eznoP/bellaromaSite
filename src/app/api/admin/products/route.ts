@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
     const product = await createProduct(parsed.data);
     revalidatePath("/");
     return NextResponse.json({ product }, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Falha ao adicionar produto:", error);
     return NextResponse.json({ error: "Não foi possível adicionar o produto." }, { status: 500 });
   }
 }
