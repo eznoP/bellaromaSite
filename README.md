@@ -32,7 +32,8 @@ NEXT_PUBLIC_SITE_URL=https://bellaroma.com.br
 NEXT_PUBLIC_WHATSAPP_NUMBER=5531999999999
 ADMIN_PASSWORD=uma-senha-forte
 ADMIN_SESSION_SECRET=uma-chave-aleatoria-com-32-caracteres-ou-mais
-BLOB_READ_WRITE_TOKEN=vercel_blob_rw_seu-token
+BLOB_STORE_ID=store_seu-id
+BLOB_WEBHOOK_PUBLIC_KEY=sua-chave-publica-do-webhook
 ```
 
 O número do WhatsApp deve conter apenas código do país, DDD e número. Sem essa variável, os links abrem o WhatsApp com a mensagem pronta, mas sem um destinatário definido.
@@ -41,7 +42,7 @@ O número do WhatsApp deve conter apenas código do país, DDD e número. Sem es
 
 Na Vercel, configure as variáveis em **Settings → Environment Variables** para Production e Preview e faça um novo deployment. A integração do Neon normalmente cria `DATABASE_URL` automaticamente. Nunca use o prefixo `NEXT_PUBLIC_` em credenciais ou segredos.
 
-Para as fotos, crie um Blob Store em **Vercel → Storage → Blob** e conecte-o ao projeto. A Vercel adicionará `BLOB_READ_WRITE_TOKEN`; faça um novo deployment depois da conexão. O upload aceita JPG, PNG, WebP e AVIF de até 8 MB por arquivo.
+Para as fotos, crie um Blob Store público em **Vercel → Storage → Blob** e conecte-o ao projeto. A Vercel adicionará `BLOB_STORE_ID` e `BLOB_WEBHOOK_PUBLIC_KEY`; a autenticação de escrita usa o OIDC injetado automaticamente no ambiente. Faça um novo deployment depois da conexão. O upload aceita JPG, PNG, WebP e AVIF de até 8 MB por arquivo.
 
 ## Painel administrativo
 
