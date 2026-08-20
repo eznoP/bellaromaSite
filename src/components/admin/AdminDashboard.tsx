@@ -359,7 +359,7 @@ export function AdminDashboard({
                 const productBusy = busy === product.id;
                 return (
                   <article className={styles.productRow} key={product.id}>
-                    <div className={styles.productThumb} data-tone={product.tone}>
+                    <div className={styles.productThumb}>
                       {product.imageUrls[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={product.imageUrls[0]} alt="" />

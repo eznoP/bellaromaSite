@@ -35,12 +35,12 @@ export async function POST(request: NextRequest) {
         token: await issueSignedToken({
           pathname,
           operations: ["put"],
-          allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],
+          allowedContentTypes: ["image/webp"],
           maximumSizeInBytes: 8 * 1024 * 1024,
           validUntil: Date.now() + 10 * 60 * 1000,
         }),
         urlOptions: {
-          allowedContentTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],
+          allowedContentTypes: ["image/webp"],
           maximumSizeInBytes: 8 * 1024 * 1024,
           addRandomSuffix: true,
           tokenPayload: JSON.stringify({ pathname }),

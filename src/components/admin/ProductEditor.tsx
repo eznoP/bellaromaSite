@@ -7,8 +7,6 @@ import {
   PRODUCT_SIZE_DESCRIPTIONS,
   PRODUCT_SIZE_LABELS,
   PRODUCT_SIZES,
-  PRODUCT_TONE_LABELS,
-  PRODUCT_TONES,
   type Product,
   type ProductInput,
 } from "@/lib/product";
@@ -16,6 +14,7 @@ import styles from "./admin.module.css";
 
 const MAX_IMAGES = 5;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_WEBP_DIMENSION = 2400;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 
 function createEmptyProduct(): ProductInput {
@@ -26,7 +25,6 @@ function createEmptyProduct(): ProductInput {
     price: "",
     imageUrls: [],
     size: "medium",
-    tone: "ivory",
     published: true,
   };
 }
@@ -39,7 +37,6 @@ function toFormProduct(product: Product | null): ProductInput {
     price: product.price,
     imageUrls: [...product.imageUrls],
     size: product.size,
-    tone: product.tone,
     published: product.published,
   } : createEmptyProduct();
 }
@@ -66,8 +63,7 @@ function formatPrice(value: string) {
   }).format(amount);
 }
 
-function safeFilename(filename: string) {
-  const extension = filename.split(".").pop()?.toLowerCase() || "jpg";
+function safeWebPFilename(filename: string) {
   const base = filename
     .replace(/\.[^.]+$/, "")
     .normalize("NFD")
@@ -75,7 +71,36 @@ function safeFilename(filename: string) {
     .replace(/[^a-zA-Z0-9-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase() || "produto";
-  return `${base}.${extension}`;
+  return `${base}.webp`;
+}
+
+async function convertImageToWebP(file: File) {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, MAX_WEBP_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("O navegador não conseguiu preparar a imagem.");
+    context.drawImage(bitmap, 0, 0, width, height);
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/webp", 0.86);
+    });
+    if (!blob || blob.type !== "image/webp") {
+      throw new Error("Este navegador não conseguiu converter a imagem para WebP.");
+    }
+
+    return new File([blob], safeWebPFilename(file.name), {
+      type: "image/webp",
+      lastModified: Date.now(),
+    });
+  } finally {
+    bitmap.close();
+  }
 }
 
 export function ProductEditor({
@@ -96,6 +121,7 @@ export function ProductEditor({
   const [form, setForm] = useState<ProductInput>(() => toFormProduct(product));
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("Enviando");
   const [message, setMessage] = useState("");
   const uploadedThisSession = useRef(new Set<string>());
 
@@ -142,10 +168,13 @@ export function ProductEditor({
     setUploadProgress(0);
     try {
       for (const [index, file] of files.entries()) {
-        const blob = await uploadPresigned(`products/${safeFilename(file.name)}`, file, {
+        setUploadStatus(`Convertendo ${index + 1}/${files.length} para WebP`);
+        const webpFile = await convertImageToWebP(file);
+        setUploadStatus(`Enviando ${index + 1}/${files.length}`);
+        const blob = await uploadPresigned(`products/${webpFile.name}`, webpFile, {
           access: "public",
           handleUploadUrl: "/api/admin/uploads",
-          multipart: file.size > 4 * 1024 * 1024,
+          multipart: webpFile.size > 4 * 1024 * 1024,
           onUploadProgress: ({ percentage }) => {
             const totalPercentage = ((index + percentage / 100) / files.length) * 100;
             setUploadProgress(Math.round(totalPercentage));
@@ -158,6 +187,7 @@ export function ProductEditor({
         }));
       }
       setUploadProgress(100);
+      setUploadStatus("Enviando");
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "Não foi possível enviar as imagens.");
     } finally {
@@ -248,11 +278,7 @@ export function ProductEditor({
               <span>{PRODUCT_SIZE_LABELS[form.size]}</span>
             </div>
             <div className={styles.catalogPreviewStage} data-size={form.size}>
-              <div className={styles.cardPreview} data-tone={form.tone}>
-                <div className={styles.previewMeta}>
-                  <span>01</span>
-                  <span>{form.category || "Sem categoria"}</span>
-                </div>
+              <div className={styles.cardPreview}>
                 <div className={styles.previewVisual}>
                   {form.imageUrls[0] ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -261,10 +287,9 @@ export function ProductEditor({
                     <span className={styles.previewPlaceholder}>Adicione a imagem de capa</span>
                   )}
                 </div>
-                <div className={styles.previewText}>
+                <div className={styles.previewOverlay}>
                   <strong>{form.name || "Nome do produto"}</strong>
-                  {form.description && <p>{form.description}</p>}
-                  <small>{formatPrice(form.price) || "Preço não informado"}</small>
+                  <small>Clique para mais detalhes</small>
                 </div>
               </div>
             </div>
@@ -279,7 +304,7 @@ export function ProductEditor({
                 <b>{form.imageUrls.length}/{MAX_IMAGES} imagens adicionadas</b>
               </div>
               <p className={styles.uploadGuidance}>
-                Adicione de 1 a 5 fotos nítidas. A primeira será a capa do card; use as demais para mostrar detalhes, acabamentos e outros ângulos.
+                Adicione de 1 a 5 fotos nítidas. A primeira será a capa; as demais poderão mostrar detalhes e outros ângulos. Todas são convertidas automaticamente para WebP antes do envio.
               </p>
               <label
                 className={styles.uploadDropzone}
@@ -300,8 +325,8 @@ export function ProductEditor({
                     event.currentTarget.value = "";
                   }}
                 />
-                <strong>{uploading ? `Enviando… ${uploadProgress}%` : "Selecionar ou arrastar imagens"}</strong>
-                <span>JPG, PNG, WebP ou AVIF · até 8 MB cada</span>
+                <strong>{uploading ? `${uploadStatus}… ${uploadProgress}%` : "Selecionar ou arrastar imagens"}</strong>
+                <span>JPG, PNG, WebP ou AVIF · até 8 MB cada · conversão automática para WebP</span>
               </label>
               {!uploadsConfigured && (
                 <p className={styles.configWarning}>O armazenamento de imagens precisa ser conectado ao Vercel Blob.</p>
@@ -415,19 +440,6 @@ export function ProductEditor({
                 ))}
               </fieldset>
 
-              <label>
-                <span>Cor de fundo do card</span>
-                <select
-                  name="tone"
-                  value={form.tone}
-                  onChange={(event) => update({ tone: event.target.value as ProductInput["tone"] })}
-                >
-                  {PRODUCT_TONES.map((tone) => (
-                    <option value={tone} key={tone}>{PRODUCT_TONE_LABELS[tone]}</option>
-                  ))}
-                </select>
-              </label>
-
               <label className={styles.switchField}>
                 <input
                   name="published"
@@ -446,7 +458,7 @@ export function ProductEditor({
                 Cancelar
               </button>
               <button className={styles.primaryButton} type="submit" disabled={busy || form.imageUrls.length === 0}>
-                {saving ? "Salvando…" : uploading ? `Enviando… ${uploadProgress}%` : product ? "Salvar alterações" : "Adicionar produto"}
+                {saving ? "Salvando…" : uploading ? `${uploadStatus}… ${uploadProgress}%` : product ? "Salvar alterações" : "Adicionar produto"}
               </button>
             </div>
           </form>

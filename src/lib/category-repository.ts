@@ -46,8 +46,8 @@ export async function deleteCategory(id: string) {
     `DELETE FROM public.categories AS category
      WHERE category.id = $1
        AND NOT EXISTS (
-         SELECT 1 FROM public.products
-         WHERE LOWER(public.products.category) = LOWER(category.name)
+         SELECT 1 FROM public.catalog_products
+         WHERE LOWER(public.catalog_products.category) = LOWER(category.name)
        )
      RETURNING id`,
     [id],

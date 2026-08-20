@@ -1,8 +1,6 @@
 export const PRODUCT_SIZES = ["wide", "tall", "compact", "medium", "long"] as const;
-export const PRODUCT_TONES = ["olive", "ivory", "linen", "deep", "sage"] as const;
 
 export type ProductSize = (typeof PRODUCT_SIZES)[number];
-export type ProductTone = (typeof PRODUCT_TONES)[number];
 
 export type ProductInput = {
   name: string;
@@ -11,7 +9,6 @@ export type ProductInput = {
   price: string;
   imageUrls: string[];
   size: ProductSize;
-  tone: ProductTone;
   published: boolean;
 };
 
@@ -38,14 +35,6 @@ export const PRODUCT_SIZE_DESCRIPTIONS: Record<ProductSize, string> = {
   long: "Faixa ampla para conjuntos completos ou composições panorâmicas.",
 };
 
-export const PRODUCT_TONE_LABELS: Record<ProductTone, string> = {
-  olive: "Oliva",
-  ivory: "Marfim",
-  linen: "Linho",
-  deep: "Verde profundo",
-  sage: "Sálvia",
-};
-
 export function toProductInput(product: Product): ProductInput {
   return {
     name: product.name,
@@ -54,7 +43,6 @@ export function toProductInput(product: Product): ProductInput {
     price: product.price,
     imageUrls: product.imageUrls,
     size: product.size,
-    tone: product.tone,
     published: product.published,
   };
 }
