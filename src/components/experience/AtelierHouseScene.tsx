@@ -1,6 +1,6 @@
 "use client";
 
-import { ContactShadows, RoundedBox } from "@react-three/drei";
+import { RoundedBox } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
@@ -447,7 +447,7 @@ export function AtelierHouseScene({
     const houseX = mobile ? 0 : portrait ? 1.3 : 1.65;
     const firstApproach = range(value, 0.08, 0.32);
     const doorApproach = range(value, 0.25, 0.61);
-    const passage = range(value, 0.58, 0.91);
+    const passage = range(value, 0.56, 0.82);
     const lateralApproach = range(value, 0.08, 0.42);
     const verticalApproach = range(value, 0.16, 0.48);
     const startZ = mobile ? 22.5 : portrait ? 20 : 15.4;
@@ -457,17 +457,17 @@ export function AtelierHouseScene({
 
     let cameraZ = MathUtils.lerp(startZ, middleZ, firstApproach);
     cameraZ = MathUtils.lerp(cameraZ, 4.8, doorApproach);
-    cameraZ = MathUtils.lerp(cameraZ, -0.9, passage);
+    cameraZ = MathUtils.lerp(cameraZ, 1.24, passage);
 
     camera.position.set(
-      mobile ? MathUtils.lerp(0, 0.18, passage) : MathUtils.lerp(0, houseX + 0.18 * passage, lateralApproach),
-      MathUtils.lerp(0.88, -0.02, passage),
+      mobile ? 0 : MathUtils.lerp(0, houseX, lateralApproach),
+      MathUtils.lerp(0.88, 0.18, passage),
       cameraZ,
     );
     camera.lookAt(
-      mobile ? MathUtils.lerp(0, 0.38, passage) : MathUtils.lerp(0, houseX + 0.38 * passage, lateralApproach),
-      MathUtils.lerp(approachTargetY, 0.02, passage),
-      MathUtils.lerp(0, -4.4, passage),
+      mobile ? 0 : MathUtils.lerp(0, houseX, lateralApproach),
+      MathUtils.lerp(approachTargetY, 0.08, passage),
+      MathUtils.lerp(0, -1.34, passage),
     );
 
     if (house.current) {
@@ -500,19 +500,19 @@ export function AtelierHouseScene({
       <hemisphereLight args={["#dcecf4", "#56664f", 1.15]} />
       <ambientLight intensity={0.2} color="#fff7e9" />
       <directionalLight
-        castShadow={!mobile}
+        castShadow
         color="#ffe3b3"
-        intensity={3.1}
+        intensity={2.75}
         position={[-8, 12, 9]}
-        shadow-mapSize={mobile ? [512, 512] : [1024, 1024]}
-        shadow-camera-left={-11}
-        shadow-camera-right={11}
-        shadow-camera-top={11}
-        shadow-camera-bottom={-6}
+        shadow-mapSize={mobile ? [1024, 1024] : [2048, 2048]}
+        shadow-camera-left={-9}
+        shadow-camera-right={9}
+        shadow-camera-top={8}
+        shadow-camera-bottom={-5}
         shadow-camera-near={1}
-        shadow-camera-far={38}
-        shadow-bias={-0.0003}
-        shadow-normalBias={0.028}
+        shadow-camera-far={34}
+        shadow-bias={-0.00016}
+        shadow-normalBias={0.022}
       />
       <directionalLight color="#8fb3c7" intensity={0.58} position={[8, 5, -7]} />
       <pointLight
@@ -565,60 +565,52 @@ export function AtelierHouseScene({
             roughness={0.96}
           />
         </mesh>
-        {[-2.12, 2.12].map((x) => (
-          <mesh position={[x, 0, -1.6]} castShadow receiveShadow key={x}>
-            <boxGeometry args={[1.76, 4, 0.2]} />
-            <meshStandardMaterial map={textures.wall} color="#f0e7da" roughness={0.95} />
-          </mesh>
-        ))}
-        <mesh position={[0, 1.55, -1.6]} castShadow receiveShadow>
-          <boxGeometry args={[2.5, 0.9, 0.2]} />
-          <meshStandardMaterial map={textures.wall} color="#f0e7da" roughness={0.95} />
+        <mesh position={[0, 0, -1.6]} castShadow receiveShadow>
+          <boxGeometry args={[6.2, 4, 0.2]} />
+          <meshStandardMaterial map={textures.wall} color="#eee3d6" roughness={0.95} />
         </mesh>
-        {[-1.22, 1.22].map((x) => (
-          <RoundedBox
-            args={[0.14, 3.12, 0.2]}
-            position={[x, -0.42, -1.48]}
-            radius={0.025}
-            smoothness={3}
-            castShadow
-            key={x}
-          >
-            <meshStandardMaterial map={textures.wood} color="#596d5b" roughness={0.84} />
-          </RoundedBox>
-        ))}
-        <RoundedBox
-          args={[2.56, 0.14, 0.2]}
-          position={[0, 1.08, -1.48]}
-          radius={0.025}
-          smoothness={3}
-          castShadow
-        >
-          <meshStandardMaterial map={textures.wood} color="#596d5b" roughness={0.84} />
-        </RoundedBox>
 
-        <group position={[0, -0.38, -3.15]}>
-          <mesh position={[-1.2, 0.28, 0]} castShadow receiveShadow>
-            <boxGeometry args={[0.16, 3, 3.15]} />
-            <meshStandardMaterial map={textures.wall} color="#d9ccbc" roughness={0.96} />
+        <group position={[0, 0.02, -1.47]}>
+          <RoundedBox
+            args={[1.62, 2.18, 0.12]}
+            radius={0.08}
+            smoothness={4}
+            castShadow
+            receiveShadow
+          >
+            <meshStandardMaterial map={textures.wood} color="#4f6252" roughness={0.83} />
+          </RoundedBox>
+          <RoundedBox
+            args={[1.38, 1.94, 0.075]}
+            position={[0, 0, 0.075]}
+            radius={0.06}
+            smoothness={4}
+            receiveShadow
+          >
+            <meshStandardMaterial map={textures.wall} color="#c8b79f" roughness={0.96} />
+          </RoundedBox>
+          <mesh position={[0, 0.05, 0.13]} castShadow>
+            <torusGeometry args={[0.48, 0.045, 16, 64]} />
+            <meshStandardMaterial map={textures.wood} color="#9c7751" roughness={0.82} />
           </mesh>
-          <mesh position={[1.2, 0.28, 0]} castShadow receiveShadow>
-            <boxGeometry args={[0.16, 3, 3.15]} />
-            <meshStandardMaterial map={textures.wall} color="#d9ccbc" roughness={0.96} />
+          <mesh position={[0, 0.05, 0.142]}>
+            <circleGeometry args={[0.43, 48]} />
+            <meshStandardMaterial color="#7f9476" roughness={0.96} />
           </mesh>
-          <mesh position={[0, -1.2, 0]} receiveShadow>
-            <boxGeometry args={[2.4, 0.12, 3.15]} />
-            <meshStandardMaterial map={textures.wood} color="#b59472" roughness={0.9} />
-          </mesh>
-          <mesh position={[0, 1.7, 0]} receiveShadow>
-            <boxGeometry args={[2.4, 0.12, 3.15]} />
-            <meshStandardMaterial color="#d4c5b4" roughness={0.96} />
-          </mesh>
-          <pointLight color="#ffc06f" intensity={1.45} distance={5} decay={2} position={[0, 0.7, -1.15]} />
-          <mesh position={[0, 0.72, -1.42]}>
-            <circleGeometry args={[0.2, 24]} />
-            <meshStandardMaterial color="#fff0ce" emissive="#ffc06f" emissiveIntensity={2.1} />
-          </mesh>
+          {Array.from({ length: 7 }, (_, index) => {
+            const angle = (index / 7) * Math.PI * 2;
+            return (
+              <mesh
+                position={[Math.cos(angle) * 0.24, 0.05 + Math.sin(angle) * 0.24, 0.17]}
+                rotation={[0, 0, angle]}
+                scale={[0.75, 1.2, 0.55]}
+                key={index}
+              >
+                <sphereGeometry args={[0.07, 14, 10]} />
+                <meshStandardMaterial color={index % 2 ? "#e6d6bb" : "#d5b8ae"} roughness={0.92} />
+              </mesh>
+            );
+          })}
         </group>
 
         <mesh position={[0, 0, 1.715]} castShadow receiveShadow>
@@ -932,15 +924,11 @@ export function AtelierHouseScene({
 
       </group>
 
-      <GardenEnvironment groundMap={textures.ground} houseX={houseX} mobile={mobile} />
-      <ContactShadows
-        position={[houseX, -2.13, 0.2]}
-        opacity={0.28}
-        scale={20}
-        blur={3.4}
-        far={10}
-        resolution={mobile ? 256 : 512}
-        frames={1}
+      <GardenEnvironment
+        groundMap={textures.ground}
+        woodMap={textures.wood}
+        houseX={houseX}
+        mobile={mobile}
       />
     </>
   );
