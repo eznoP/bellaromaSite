@@ -76,12 +76,12 @@ export function HouseScrollExperience() {
           145,
         )
         .add("[data-scene-meta]", { opacity: 0, duration: 120 }, 110)
-        .add("[data-portal]", { opacity: 1, duration: 180, ease: "inOutQuad" }, 800)
-        .add("[data-scene-canvas]", { opacity: 0, duration: 180 }, 820)
+        .add("[data-portal]", { opacity: 1, duration: 180, ease: "inOutQuad" }, 760)
+        .add("[data-scene-canvas]", { opacity: 0, duration: 180 }, 790)
         .add(
           "[data-portal-copy]",
           { opacity: 1, y: 0, duration: 150, ease: "out(4)" },
-          845,
+          820,
         );
 
       return () => {
