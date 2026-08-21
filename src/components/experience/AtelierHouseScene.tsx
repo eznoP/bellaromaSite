@@ -5,7 +5,6 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
   CanvasTexture,
-  CatmullRomCurve3,
   DoubleSide,
   Group,
   MathUtils,
@@ -13,8 +12,8 @@ import {
   RepeatWrapping,
   Shape,
   SRGBColorSpace,
-  Vector3,
 } from "three";
+import { GardenEnvironment, WindowPlanter } from "./GardenEnvironment";
 
 type ProgressRef = { current: { value: number } };
 type InvalidateRef = { current: (() => void) | null };
@@ -24,14 +23,6 @@ const ROOF_RISE = 1.7;
 const ROOF_HALF_WIDTH = 3.35;
 const ROOF_PITCH = Math.atan(ROOF_RISE / ROOF_HALF_WIDTH);
 const ROOF_SLOPE_LENGTH = Math.hypot(ROOF_HALF_WIDTH, ROOF_RISE);
-
-const steppingStones = [
-  { z: 2.25, width: 1.34, rotation: -0.04 },
-  { z: 3.2, width: 1.48, rotation: 0.035 },
-  { z: 4.25, width: 1.62, rotation: -0.025 },
-  { z: 5.42, width: 1.8, rotation: 0.04 },
-  { z: 6.72, width: 2.02, rotation: -0.03 },
-];
 
 function range(value: number, start: number, end: number) {
   const normalized = MathUtils.clamp((value - start) / (end - start), 0, 1);
@@ -43,8 +34,8 @@ function seededNoise(index: number) {
   return value - Math.floor(value);
 }
 
-function createPatternTexture(kind: PatternKind) {
-  const size = 256;
+function createPatternTexture(kind: PatternKind, anisotropy: number) {
+  const size = kind === "ground" ? 1024 : 512;
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
   canvas.width = size;
@@ -52,7 +43,7 @@ function createPatternTexture(kind: PatternKind) {
 
   if (!context) throw new Error("Nao foi possivel criar as texturas da casa.");
 
-  context.fillStyle = kind === "ground" ? "#edf0e8" : "#f5f2ed";
+  context.fillStyle = kind === "ground" ? "#8fa57f" : "#f5f2ed";
   context.fillRect(0, 0, size, size);
 
   if (kind === "linen") {
@@ -116,35 +107,46 @@ function createPatternTexture(kind: PatternKind) {
   }
 
   if (kind === "ground") {
-    context.lineWidth = 1;
-    for (let index = 0; index < 180; index += 1) {
+    for (let index = 0; index < 1800; index += 1) {
       const x = seededNoise(index) * size;
       const y = seededNoise(index + 240) * size;
-      const length = 2 + seededNoise(index + 480) * 6;
-      context.strokeStyle = `rgba(47, 66, 48, ${0.04 + seededNoise(index + 720) * 0.08})`;
+      const radius = 0.5 + seededNoise(index + 480) * 2.8;
+      context.fillStyle = index % 3 === 0
+        ? `rgba(42, 69, 43, ${0.08 + seededNoise(index + 720) * 0.13})`
+        : `rgba(220, 226, 196, ${0.035 + seededNoise(index + 720) * 0.08})`;
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.lineWidth = 1;
+    for (let index = 0; index < 900; index += 1) {
+      const x = seededNoise(index + 1900) * size;
+      const y = seededNoise(index + 2400) * size;
+      const length = 3 + seededNoise(index + 2900) * 10;
+      context.strokeStyle = `rgba(38, 73, 40, ${0.08 + seededNoise(index + 3400) * 0.16})`;
       context.beginPath();
       context.moveTo(x, y);
-      context.lineTo(x + length * 0.3, y - length);
+      context.quadraticCurveTo(x + length * 0.35, y - length * 0.55, x + length * 0.12, y - length);
       context.stroke();
     }
   }
 
   const texture = new CanvasTexture(canvas);
-  const repeat = kind === "ground" ? 12 : kind === "roof" ? 4 : 3;
+  const repeat = kind === "ground" ? 34 : kind === "roof" ? 4 : 3;
   texture.wrapS = RepeatWrapping;
   texture.wrapT = RepeatWrapping;
   texture.repeat.set(repeat, repeat);
   texture.colorSpace = SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = anisotropy;
   texture.needsUpdate = true;
   return texture;
 }
 
-function createSkyTexture() {
+function createSkyTexture(anisotropy: number) {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 1024;
+  canvas.height = 1024;
 
   if (!context) throw new Error("Nao foi possivel criar o fundo do ceu.");
 
@@ -155,9 +157,27 @@ function createSkyTexture() {
   context.fillStyle = gradient;
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  for (let index = 0; index < 110; index += 1) {
+  const sun = context.createRadialGradient(760, 205, 6, 760, 205, 180);
+  sun.addColorStop(0, "rgba(255, 243, 205, 0.9)");
+  sun.addColorStop(0.16, "rgba(255, 226, 170, 0.34)");
+  sun.addColorStop(1, "rgba(255, 226, 170, 0)");
+  context.fillStyle = sun;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let cloud = 0; cloud < 22; cloud += 1) {
+    const centerX = seededNoise(cloud + 5000) * canvas.width;
+    const centerY = 170 + seededNoise(cloud + 5100) * 420;
+    const cloudWidth = 70 + seededNoise(cloud + 5200) * 150;
+    const cloudGradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, cloudWidth);
+    cloudGradient.addColorStop(0, "rgba(255,255,255,0.15)");
+    cloudGradient.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = cloudGradient;
+    context.fillRect(centerX - cloudWidth, centerY - cloudWidth, cloudWidth * 2, cloudWidth * 2);
+  }
+
+  for (let index = 0; index < 220; index += 1) {
     const x = seededNoise(index + 900) * canvas.width;
-    const width = 0.4 + seededNoise(index + 1100) * 1.2;
+    const width = 0.4 + seededNoise(index + 1100) * 1.4;
     context.strokeStyle = `rgba(255, 255, 255, ${0.012 + seededNoise(index + 1300) * 0.025})`;
     context.lineWidth = width;
     context.beginPath();
@@ -168,7 +188,7 @@ function createSkyTexture() {
 
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = anisotropy;
   texture.needsUpdate = true;
   return texture;
 }
@@ -228,7 +248,7 @@ function Spool({
   threadColor?: string;
 }) {
   return (
-    <group position={position} rotation={[Math.PI / 2, 0, 0]} scale={scale}>
+    <group position={position} scale={scale}>
       <mesh castShadow>
         <cylinderGeometry args={[0.2, 0.2, 0.52, 20]} />
         <meshStandardMaterial color={threadColor} roughness={0.9} />
@@ -240,100 +260,6 @@ function Spool({
       <mesh position={[0, -0.3, 0]} castShadow>
         <cylinderGeometry args={[0.32, 0.32, 0.08, 20]} />
         <meshStandardMaterial color="#344238" roughness={0.82} />
-      </mesh>
-    </group>
-  );
-}
-
-function GardenPlant({
-  position,
-  scale = 1,
-  bloom = "#f1cbbf",
-  detailed = true,
-}: {
-  position: [number, number, number];
-  scale?: number;
-  bloom?: string;
-  detailed?: boolean;
-}) {
-  return (
-    <group position={position} scale={scale}>
-      <mesh position={[0, 0.22, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.27, 0.35, 0.44, 12]} />
-        <meshStandardMaterial color="#b99578" roughness={0.95} />
-      </mesh>
-      <mesh position={[0, 0.43, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.28, 0.045, 8, 20]} />
-        <meshStandardMaterial color="#a27f65" roughness={0.94} />
-      </mesh>
-      {detailed && (
-        <>
-          <mesh position={[-0.08, 0.7, 0]} rotation={[0, 0, -0.2]}>
-            <cylinderGeometry args={[0.025, 0.03, 0.62, 8]} />
-            <meshStandardMaterial color="#526b52" roughness={1} />
-          </mesh>
-          <mesh position={[0.11, 0.72, -0.02]} rotation={[0, 0, 0.26]}>
-            <cylinderGeometry args={[0.022, 0.028, 0.58, 8]} />
-            <meshStandardMaterial color="#526b52" roughness={1} />
-          </mesh>
-        </>
-      )}
-      <mesh
-        position={[-0.2, 0.72, 0.01]}
-        rotation={[0, 0, -0.65]}
-        scale={[0.55, 1, 0.35]}
-      >
-        <sphereGeometry args={[0.27, 12, 8]} />
-        <meshStandardMaterial color="#5d7759" roughness={0.95} />
-      </mesh>
-      <mesh
-        position={[0.2, 0.77, 0.02]}
-        rotation={[0, 0, 0.7]}
-        scale={[0.52, 1, 0.34]}
-      >
-        <sphereGeometry args={[0.29, 12, 8]} />
-        <meshStandardMaterial color="#778873" roughness={0.95} />
-      </mesh>
-      <mesh position={[0, 1.0, -0.02]}>
-        <sphereGeometry args={[0.13, 12, 8]} />
-        <meshStandardMaterial color={bloom} roughness={0.88} />
-      </mesh>
-      {detailed && (
-        <>
-          <mesh position={[-0.12, 0.96, 0.02]}>
-            <sphereGeometry args={[0.09, 10, 8]} />
-            <meshStandardMaterial color={bloom} roughness={0.88} />
-          </mesh>
-          <mesh position={[0.12, 0.96, 0.01]}>
-            <sphereGeometry args={[0.09, 10, 8]} />
-            <meshStandardMaterial color={bloom} roughness={0.88} />
-          </mesh>
-        </>
-      )}
-    </group>
-  );
-}
-
-function Shrub({
-  position,
-  scale = 1,
-}: {
-  position: [number, number, number];
-  scale?: number;
-}) {
-  return (
-    <group position={position} scale={scale}>
-      <mesh position={[-0.26, 0.34, 0]}>
-        <dodecahedronGeometry args={[0.46, 0]} />
-        <meshStandardMaterial color="#6f8768" roughness={1} flatShading />
-      </mesh>
-      <mesh position={[0.25, 0.3, 0.05]}>
-        <dodecahedronGeometry args={[0.4, 0]} />
-        <meshStandardMaterial color="#84987a" roughness={1} flatShading />
-      </mesh>
-      <mesh position={[0, 0.62, -0.04]}>
-        <dodecahedronGeometry args={[0.38, 0]} />
-        <meshStandardMaterial color="#5d7759" roughness={1} flatShading />
       </mesh>
     </group>
   );
@@ -415,11 +341,11 @@ function RolledMat({
         <cylinderGeometry args={[0.085, 0.085, 0.54, 14]} />
         <meshStandardMaterial color="#c9b8a4" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 0, -0.27]}>
+      <mesh position={[-0.27, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.085, 0.085, 0.022, 14]} />
         <meshStandardMaterial color="#dccfc0" roughness={0.98} />
       </mesh>
-      <mesh position={[0, 0, 0.27]}>
+      <mesh position={[0.27, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[0.085, 0.085, 0.022, 14]} />
         <meshStandardMaterial color="#dccfc0" roughness={0.98} />
       </mesh>
@@ -475,17 +401,18 @@ export function AtelierHouseScene({
   const house = useRef<Group>(null);
   const door = useRef<Group>(null);
   const interiorLight = useRef<PointLight>(null);
-  const { camera, invalidate, size } = useThree();
+  const { camera, gl, invalidate, size } = useThree();
+  const anisotropy = Math.max(1, Math.min(8, gl.capabilities.getMaxAnisotropy()));
 
   const textures = useMemo(
     () => ({
-      wall: createPatternTexture("linen"),
-      roof: createPatternTexture("roof"),
-      wood: createPatternTexture("wood"),
-      ground: createPatternTexture("ground"),
-      sky: createSkyTexture(),
+      wall: createPatternTexture("linen", anisotropy),
+      roof: createPatternTexture("roof", anisotropy),
+      wood: createPatternTexture("wood", anisotropy),
+      ground: createPatternTexture("ground", anisotropy),
+      sky: createSkyTexture(anisotropy),
     }),
-    [],
+    [anisotropy],
   );
 
   const gableShape = useMemo(() => {
@@ -496,18 +423,6 @@ export function AtelierHouseScene({
     shape.closePath();
     return shape;
   }, []);
-
-  const threadCurve = useMemo(
-    () =>
-      new CatmullRomCurve3([
-        new Vector3(-3.62, -2.0, 1.45),
-        new Vector3(-3.18, -1.99, 1.9),
-        new Vector3(-2.55, -1.985, 2.08),
-        new Vector3(-2.05, -1.98, 1.86),
-        new Vector3(-1.58, -1.975, 1.96),
-      ]),
-    [],
-  );
 
   useEffect(() => {
     invalidateRef.current = invalidate;
@@ -530,29 +445,29 @@ export function AtelierHouseScene({
     const mobile = size.width < 720;
     const portrait = !mobile && aspect < 0.9;
     const houseX = mobile ? 0 : portrait ? 1.3 : 1.65;
-    const firstApproach = range(value, 0.1, 0.34);
-    const doorApproach = range(value, 0.28, 0.64);
-    const passage = range(value, 0.62, 0.93);
+    const firstApproach = range(value, 0.08, 0.32);
+    const doorApproach = range(value, 0.25, 0.61);
+    const passage = range(value, 0.58, 0.91);
     const lateralApproach = range(value, 0.08, 0.42);
     const verticalApproach = range(value, 0.16, 0.48);
-    const startZ = mobile ? 21.5 : portrait ? 19 : 13.8;
-    const middleZ = mobile ? 15 : portrait ? 13.3 : 9.1;
+    const startZ = mobile ? 22.5 : portrait ? 20 : 15.4;
+    const middleZ = mobile ? 15.6 : portrait ? 13.8 : 9.8;
     const startingTargetY = mobile ? 2.25 : portrait ? 2.8 : 0.9;
     const approachTargetY = MathUtils.lerp(startingTargetY, 0.05, verticalApproach);
 
     let cameraZ = MathUtils.lerp(startZ, middleZ, firstApproach);
-    cameraZ = MathUtils.lerp(cameraZ, 4.5, doorApproach);
-    cameraZ = MathUtils.lerp(cameraZ, 0.25, passage);
+    cameraZ = MathUtils.lerp(cameraZ, 4.8, doorApproach);
+    cameraZ = MathUtils.lerp(cameraZ, -0.9, passage);
 
     camera.position.set(
-      mobile ? 0 : MathUtils.lerp(0, houseX, lateralApproach),
-      MathUtils.lerp(0.72, -0.08, passage),
+      mobile ? MathUtils.lerp(0, 0.18, passage) : MathUtils.lerp(0, houseX + 0.18 * passage, lateralApproach),
+      MathUtils.lerp(0.88, -0.02, passage),
       cameraZ,
     );
     camera.lookAt(
-      mobile ? 0 : MathUtils.lerp(0, houseX, lateralApproach),
-      MathUtils.lerp(approachTargetY, -0.12, passage),
-      MathUtils.lerp(0, -1.55, passage),
+      mobile ? MathUtils.lerp(0, 0.38, passage) : MathUtils.lerp(0, houseX + 0.38 * passage, lateralApproach),
+      MathUtils.lerp(approachTargetY, 0.02, passage),
+      MathUtils.lerp(0, -4.4, passage),
     );
 
     if (house.current) {
@@ -563,13 +478,13 @@ export function AtelierHouseScene({
     if (door.current) {
       door.current.rotation.y = staticOpen
         ? Math.PI * 0.49
-        : range(value, 0.36, 0.61) * Math.PI * 0.49;
+        : range(value, 0.31, 0.56) * Math.PI * 0.49;
     }
 
     if (interiorLight.current) {
       interiorLight.current.intensity = staticOpen
         ? 2.2
-        : MathUtils.lerp(0.45, 2.55, range(value, 0.38, 0.76));
+        : MathUtils.lerp(0.5, 3.1, range(value, 0.34, 0.74));
     }
   });
 
@@ -581,29 +496,31 @@ export function AtelierHouseScene({
   return (
     <>
       <primitive attach="background" object={textures.sky} />
-      <fog attach="fog" args={["#bfd3d9", 16, 46]} />
-      <hemisphereLight args={["#d9e8f6", "#71745d", 0.95]} />
-      <ambientLight intensity={0.28} color="#fff7e9" />
+      <fog attach="fog" args={["#b9d0cf", 20, 52]} />
+      <hemisphereLight args={["#dcecf4", "#56664f", 1.15]} />
+      <ambientLight intensity={0.2} color="#fff7e9" />
       <directionalLight
         castShadow={!mobile}
-        color="#ffe8c4"
-        intensity={2.35}
-        position={[-6, 9, 8]}
-        shadow-mapSize={[512, 512]}
-        shadow-camera-left={-7}
-        shadow-camera-right={7}
-        shadow-camera-top={7}
-        shadow-camera-bottom={-4}
+        color="#ffe3b3"
+        intensity={3.1}
+        position={[-8, 12, 9]}
+        shadow-mapSize={mobile ? [512, 512] : [1024, 1024]}
+        shadow-camera-left={-11}
+        shadow-camera-right={11}
+        shadow-camera-top={11}
+        shadow-camera-bottom={-6}
         shadow-camera-near={1}
-        shadow-camera-far={30}
-        shadow-normalBias={0.035}
+        shadow-camera-far={38}
+        shadow-bias={-0.0003}
+        shadow-normalBias={0.028}
       />
+      <directionalLight color="#8fb3c7" intensity={0.58} position={[8, 5, -7]} />
       <pointLight
         ref={interiorLight}
-        color="#ffc47e"
+        color="#ffc06f"
         intensity={0.45}
-        position={[houseX, 0.2, -0.45]}
-        distance={7}
+        position={[houseX, 0.3, -1.15]}
+        distance={8}
         decay={2}
       />
 
@@ -648,14 +565,61 @@ export function AtelierHouseScene({
             roughness={0.96}
           />
         </mesh>
-        <mesh position={[0, 0, -1.6]} castShadow receiveShadow>
-          <boxGeometry args={[6, 4, 0.2]} />
-          <meshStandardMaterial
-            map={textures.wall}
-            color="#f0e7da"
-            roughness={0.95}
-          />
+        {[-2.12, 2.12].map((x) => (
+          <mesh position={[x, 0, -1.6]} castShadow receiveShadow key={x}>
+            <boxGeometry args={[1.76, 4, 0.2]} />
+            <meshStandardMaterial map={textures.wall} color="#f0e7da" roughness={0.95} />
+          </mesh>
+        ))}
+        <mesh position={[0, 1.55, -1.6]} castShadow receiveShadow>
+          <boxGeometry args={[2.5, 0.9, 0.2]} />
+          <meshStandardMaterial map={textures.wall} color="#f0e7da" roughness={0.95} />
         </mesh>
+        {[-1.22, 1.22].map((x) => (
+          <RoundedBox
+            args={[0.14, 3.12, 0.2]}
+            position={[x, -0.42, -1.48]}
+            radius={0.025}
+            smoothness={3}
+            castShadow
+            key={x}
+          >
+            <meshStandardMaterial map={textures.wood} color="#596d5b" roughness={0.84} />
+          </RoundedBox>
+        ))}
+        <RoundedBox
+          args={[2.56, 0.14, 0.2]}
+          position={[0, 1.08, -1.48]}
+          radius={0.025}
+          smoothness={3}
+          castShadow
+        >
+          <meshStandardMaterial map={textures.wood} color="#596d5b" roughness={0.84} />
+        </RoundedBox>
+
+        <group position={[0, -0.38, -3.15]}>
+          <mesh position={[-1.2, 0.28, 0]} castShadow receiveShadow>
+            <boxGeometry args={[0.16, 3, 3.15]} />
+            <meshStandardMaterial map={textures.wall} color="#d9ccbc" roughness={0.96} />
+          </mesh>
+          <mesh position={[1.2, 0.28, 0]} castShadow receiveShadow>
+            <boxGeometry args={[0.16, 3, 3.15]} />
+            <meshStandardMaterial map={textures.wall} color="#d9ccbc" roughness={0.96} />
+          </mesh>
+          <mesh position={[0, -1.2, 0]} receiveShadow>
+            <boxGeometry args={[2.4, 0.12, 3.15]} />
+            <meshStandardMaterial map={textures.wood} color="#b59472" roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 1.7, 0]} receiveShadow>
+            <boxGeometry args={[2.4, 0.12, 3.15]} />
+            <meshStandardMaterial color="#d4c5b4" roughness={0.96} />
+          </mesh>
+          <pointLight color="#ffc06f" intensity={1.45} distance={5} decay={2} position={[0, 0.7, -1.15]} />
+          <mesh position={[0, 0.72, -1.42]}>
+            <circleGeometry args={[0.2, 24]} />
+            <meshStandardMaterial color="#fff0ce" emissive="#ffc06f" emissiveIntensity={2.1} />
+          </mesh>
+        </group>
 
         <mesh position={[0, 0, 1.715]} castShadow receiveShadow>
           <shapeGeometry args={[gableShape]} />
@@ -829,6 +793,8 @@ export function AtelierHouseScene({
 
         <Window x={-2.05} />
         <Window x={2.05} />
+        <WindowPlanter x={-2.05} />
+        <WindowPlanter x={2.05} />
 
         <mesh position={[-1.08, -0.43, 1.78]} castShadow>
           <boxGeometry args={[0.14, 3.02, 0.16]} />
@@ -931,22 +897,22 @@ export function AtelierHouseScene({
 
         <ShelfBoard woodMap={textures.wood} x={-1.75} y={0.78} width={2.0} />
         <ShelfBoard woodMap={textures.wood} x={1.7} y={1.38} width={2.2} />
-        <Bottle position={[-2.05, 0.83, -1.31]} />
-        <Soap position={[-1.45, 0.83, -1.32]} color="#d9a98f" />
-        <Soap position={[-1.08, 0.83, -1.29]} color="#a1bc98" />
+        <Bottle position={[-2.05, 0.98, -1.31]} />
+        <Soap position={[-1.45, 0.86, -1.32]} color="#d9a98f" />
+        <Soap position={[-1.08, 0.86, -1.29]} color="#a1bc98" />
         <FoldedStack position={[1.05, 1.43, -1.32]} />
-        <Spool position={[1.62, 1.43, -1.3]} scale={0.5} threadColor="#a1bc98" />
-        <RolledMat position={[2.25, 1.43, -1.33]} />
+        <Spool position={[1.68, 1.59, -1.3]} scale={0.5} threadColor="#a1bc98" />
+        <RolledMat position={[2.28, 1.5, -1.31]} />
         <RoundedBox
-          args={[1.18, 1.18, 0.05]}
-          position={[0, 0.03, -1.475]}
+          args={[0.88, 0.88, 0.05]}
+          position={[2.08, 0.18, -1.475]}
           radius={0.06}
           smoothness={3}
         >
           <meshStandardMaterial color="#778873" roughness={0.94} />
         </RoundedBox>
-        <mesh position={[0, 0.03, -1.44]}>
-          <torusGeometry args={[0.33, 0.025, 10, 36]} />
+        <mesh position={[2.08, 0.18, -1.44]}>
+          <torusGeometry args={[0.25, 0.022, 10, 36]} />
           <meshStandardMaterial color="#fdf6ed" roughness={0.9} />
         </mesh>
 
@@ -964,53 +930,16 @@ export function AtelierHouseScene({
           <meshStandardMaterial color="#344238" roughness={0.84} />
         </mesh>
 
-        {steppingStones.map((stone) => (
-          <RoundedBox
-            args={[stone.width, 0.045, 0.68]}
-            position={[0, -2.0, stone.z]}
-            rotation={[0, stone.rotation, 0]}
-            radius={0.06}
-            smoothness={3}
-            receiveShadow
-            key={stone.z}
-          >
-            <meshStandardMaterial color="#d4c7b7" roughness={0.98} />
-          </RoundedBox>
-        ))}
-
-        <GardenPlant position={[-3.58, -2.02, 1.15]} scale={0.95} detailed={!mobile} />
-        <GardenPlant
-          position={[3.58, -2.02, 1.0]}
-          scale={0.88}
-          bloom="#f4e2bb"
-          detailed={!mobile}
-        />
-        <Shrub position={[-4.25, -2.02, 2.4]} scale={1.05} />
-        <Shrub position={[4.15, -2.02, 2.6]} scale={0.9} />
-        <Shrub position={[3.95, -2.02, -0.2]} scale={0.72} />
-
-        <Spool position={[-3.65, -1.69, 1.45]} threadColor="#d7b6a5" />
-        <mesh receiveShadow>
-          <tubeGeometry args={[threadCurve, 56, 0.024, 6, false]} />
-          <meshStandardMaterial color="#465648" roughness={0.74} />
-        </mesh>
       </group>
 
-      <mesh position={[houseX, -2.17, 1]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[30, 28]} />
-        <meshStandardMaterial
-          map={textures.ground}
-          color="#a1bc98"
-          roughness={1}
-        />
-      </mesh>
+      <GardenEnvironment groundMap={textures.ground} houseX={houseX} mobile={mobile} />
       <ContactShadows
         position={[houseX, -2.13, 0.2]}
-        opacity={0.22}
-        scale={15}
-        blur={2.8}
-        far={8}
-        resolution={256}
+        opacity={0.28}
+        scale={20}
+        blur={3.4}
+        far={10}
+        resolution={mobile ? 256 : 512}
         frames={1}
       />
     </>
