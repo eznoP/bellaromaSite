@@ -3,6 +3,7 @@
 import { createScope, createTimeline, onScroll } from "animejs";
 import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
+import { ACESFilmicToneMapping } from "three";
 import { KineticTextReveal } from "@/components/motion/KineticTextReveal";
 import { AtelierHouseScene } from "./AtelierHouseScene";
 import styles from "./house-scroll-experience.module.css";
@@ -105,11 +106,17 @@ export function HouseScrollExperience() {
 
         <div className={styles.canvasShell} data-scene-canvas aria-hidden="true">
           <ThreeCanvas
-            shadows="percentage"
+            shadows="soft"
             frameloop="demand"
-            dpr={[1, 1.5]}
-            camera={{ position: [0, 0.72, 13.8], fov: 42, near: 0.08, far: 120 }}
-            gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+            dpr={[1, 1.75]}
+            camera={{ position: [0, 0.88, 15.4], fov: 40, near: 0.08, far: 140 }}
+            gl={{
+              antialias: true,
+              alpha: false,
+              powerPreference: "high-performance",
+              toneMapping: ACESFilmicToneMapping,
+              toneMappingExposure: 1.08,
+            }}
             fallback={
               <div className={styles.webglFallback}>
                 <span />
