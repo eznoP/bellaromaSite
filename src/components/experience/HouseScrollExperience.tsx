@@ -115,7 +115,7 @@ export function HouseScrollExperience() {
               alpha: false,
               powerPreference: "high-performance",
               toneMapping: ACESFilmicToneMapping,
-              toneMappingExposure: 1.08,
+              toneMappingExposure: 1.13,
             }}
             fallback={
               <div className={styles.webglFallback}>
