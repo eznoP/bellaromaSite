@@ -7,12 +7,21 @@ export function BrandMark({
   variant = "mark",
 }: {
   className?: string;
-  variant?: "mark" | "seal";
+  variant?: "mark" | "seal" | "text";
 }) {
   if (variant === "seal") {
     return (
       <span className={className}>
         <Image src={seal} alt="Bellaroma" priority />
+      </span>
+    );
+  }
+
+  if (variant === "text") {
+    return (
+      <span className={className}>
+        <span>Bellaroma</span>
+        <small>Costura artesanal</small>
       </span>
     );
   }

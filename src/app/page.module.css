@@ -43,9 +43,17 @@
   line-height: 1;
 }
 
-.headerBrand img {
-  width: auto;
-  height: 2.35rem;
+.headerBrand > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: var(--ivory);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.6rem;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1;
 }
 
 .headerBrand small {
@@ -352,8 +360,8 @@
     display: none;
   }
 
-  .headerBrand img {
-    height: 1.9rem;
+  .headerBrand > span {
+    font-size: 1.4rem;
   }
 
   .headerCta {

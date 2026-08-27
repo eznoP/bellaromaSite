@@ -21,7 +21,7 @@ export default async function Home() {
     <div className={styles.page}>
       <header className={styles.header}>
         <a className={styles.headerBrand} href="#inicio" aria-label="Bellaroma, início">
-          <BrandMark />
+          <BrandMark variant="text" />
         </a>
         <nav className={styles.navigation} aria-label="Navegação principal">
           <a href="#catalogo">Produtos</a>
