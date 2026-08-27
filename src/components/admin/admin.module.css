@@ -36,19 +36,17 @@
   z-index: 2;
 }
 
-.accessBrand > span,
-.sidebarBrand > span {
+.accessBrand,
+.sidebarBrand {
   display: inline-grid;
+  justify-items: start;
   line-height: 1;
 }
 
-.accessBrand > span > span,
-.sidebarBrand > span > span {
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 1.7rem;
-  font-style: italic;
-  font-weight: 500;
-  letter-spacing: -0.045em;
+.accessBrand img,
+.sidebarBrand img {
+  width: auto;
+  height: 2.5rem;
 }
 
 .accessBrand small,

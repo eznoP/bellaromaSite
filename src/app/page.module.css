@@ -37,26 +37,18 @@
 }
 
 .headerBrand {
-  width: fit-content;
-}
-
-.headerBrand > span,
-.footerBrand {
   display: inline-grid;
+  width: fit-content;
+  justify-items: start;
   line-height: 1;
 }
 
-.headerBrand > span > span,
-.footerBrand > span {
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 1.6rem;
-  font-style: italic;
-  font-weight: 500;
-  letter-spacing: -0.045em;
+.headerBrand img {
+  width: auto;
+  height: 2.35rem;
 }
 
-.headerBrand small,
-.footerBrand small {
+.headerBrand small {
   margin-top: 0.28rem;
   font-size: 0.48rem;
   font-weight: 700;
@@ -307,15 +299,9 @@
   text-align: center;
 }
 
-.footerBrand > span {
-  font-size: clamp(5rem, 16vw, 15rem);
-  line-height: 0.65;
-}
-
-.footerBrand small {
-  margin-top: 2rem;
-  font-size: 0.58rem;
-  letter-spacing: 0.5em;
+.footerBrand img {
+  width: clamp(9rem, 20vw, 15rem);
+  height: auto;
 }
 
 .footerBottom {
@@ -366,8 +352,8 @@
     display: none;
   }
 
-  .headerBrand > span > span {
-    font-size: 1.4rem;
+  .headerBrand img {
+    height: 1.9rem;
   }
 
   .headerCta {
@@ -407,8 +393,8 @@
     margin-bottom: 5rem;
   }
 
-  .footerBrand > span {
-    font-size: clamp(4.2rem, 22vw, 7rem);
+  .footerBrand img {
+    width: clamp(7rem, 40vw, 9rem);
   }
 
   .footerBottom nav {

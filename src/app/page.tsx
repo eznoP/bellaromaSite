@@ -95,7 +95,7 @@ export default async function Home() {
         <div className={styles.footerTopline}>
           <a href="#inicio">Voltar ao início ↑</a>
         </div>
-        <BrandMark className={styles.footerBrand} />
+        <BrandMark className={styles.footerBrand} variant="seal" />
         <div className={styles.footerBottom}>
           <span>© {new Date().getFullYear()} Bellaroma</span>
           <nav aria-label="Navegação do rodapé">
